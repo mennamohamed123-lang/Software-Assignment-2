@@ -5,18 +5,22 @@ skinparam linetype ortho
 skinparam shadowing false
 skinparam roundcorner 15
 skinparam packageBackgroundColor transparent
+skinparam packageFontColor #F7F4D5
 skinparam classBorderColor #555
-skinparam classArrowColor #aaaaaa
-skinparam classBackgroundColor #b1b1da
-skinparam classFontColor #ffffff
+skinparam classArrowColor #D3968C
+skinparam ArrowThickness 3
+skinparam ClassFontSize 20
+skinparam classBackgroundColor #F7F4D5
+skinparam BackgroundColor #F7F4D5
+skinparam classFontColor #105666
 skinparam shadowing false
 skinparam roundcorner 15
 
 ' ─────────────────────────────────────────
-package "MODEL" #1a3a5c {
+package "MODEL" #839958 {
 
   class BudgetCycle <<Entity>> {
-    - id : int
+    - id : int    
     - totalAllowance : float
     - startDate : Date
     - endDate : Date
@@ -133,7 +137,7 @@ package "VIEW" #1a3d2b {
 }
 
 ' ─────────────────────────────────────────
-package "CONTROLLER" #3b1a1a {
+package "CONTROLLER" #105666 {
 
   class BudgetSetupController <<Control>> {
     - cycleModel : BudgetCycle
