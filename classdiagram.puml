@@ -1,0 +1,238 @@
+@startuml
+allow_mixing
+left to right direction
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 15
+skinparam packageBackgroundColor transparent
+skinparam classBorderColor #555
+skinparam classArrowColor #aaaaaa
+skinparam classBackgroundColor #b1b1da
+skinparam classFontColor #ffffff
+skinparam shadowing false
+skinparam roundcorner 15
+
+' ─────────────────────────────────────────
+package "MODEL" #1a3a5c {
+
+  class BudgetCycle <<Entity>> {
+    - id : int
+    - totalAllowance : float
+    - startDate : Date
+    - endDate : Date
+    - remainingBalance : float
+    - isActive : boolean
+    + getRemainingBalance() : float
+    + getSpentPercentage() : float
+    + getDaysRemaining() : int
+    + getTotalDays() : int
+    + save() : void
+  }
+
+  class Transaction <<Entity>> {
+    - id : int
+    - amount : float
+    - category : String
+    - timestamp : DateTime
+    - cycleId : int
+    + save() : boolean
+    + getAmount() : float
+    + getCategory() : String
+    + getByCycle(cycleId) : List
+  }
+
+  class DailyRecord <<Entity>> {
+    - id : int
+    - date : Date
+    - allocatedLimit : float
+    - totalSpent : float
+    - cycleId : int
+    + getUnspentAmount() : float
+    + isOverspent() : boolean
+    + rolloverAmount() : float
+  }
+
+  class NotificationLog <<Entity>> {
+    - id : int
+    - thresholdPct : int
+    - sentAt : DateTime
+    - cycleId : int
+    - type : String
+    + markAsSent() : void
+    + isAlreadySent(pct) : boolean
+  }
+
+  class Category <<Entity>> {
+    - id : int
+    - name : String
+    - iconResId : int
+    + getAll() : List
+    + addCustom(name) : void
+  }
+}
+
+' ─────────────────────────────────────────
+package "VIEW" #1a3d2b {
+
+  interface BaseView {
+    + showError(msg) : void
+  }
+
+  class InitializationView <<Boundary>> {
+    - allowanceInput : EditText
+    - startDatePicker : DatePicker
+    - endDatePicker : DatePicker
+    - continueBtn : Button
+    + showValidationError(msg) : void
+    + navigateToDashboard() : void
+  }
+
+  class ExpenseEntryView <<Boundary>> {
+    - amountInput : EditText
+    - categoryGrid : GridView
+    - saveBtn : Button
+    - cancelBtn : Button
+    + showError(msg) : void
+    + showSavedConfirmation() : void
+    + navigateToDashboard() : void
+  }
+
+  class DashboardView <<Boundary>> {
+    - dailyLimitLabel : TextView
+    - remainingBalanceLabel : TextView
+    - logExpenseBtn : Button
+    - alertBanner : View
+    - limitColorIndicator : View
+    + displayDailyLimit(amount) : void
+    + displayRemainingBalance(amount) : void
+    + showFinalDayBadge() : void
+    + highlightWarning(color) : void
+    + showBudgetAlert(msg) : void
+  }
+
+  class StatsView <<Boundary>> {
+    - pieChart : PieChart
+    - categoryLegend : ListView
+    - totalSpentLabel : TextView
+    + renderPieChart(data) : void
+    + showEmptyState() : void
+    + updateCategoryLegend(categories) : void
+  }
+
+  class NotificationView <<Boundary>> {
+    - notificationTitle : String
+    - notificationBody : String
+    - channelId : String
+    + showThresholdAlert(pct) : void
+    + showExhaustedAlert() : void
+    + dismiss() : void
+  }
+
+  BaseView <|.. ExpenseEntryView
+  BaseView <|.. DashboardView
+}
+
+' ─────────────────────────────────────────
+package "CONTROLLER" #3b1a1a {
+
+  class BudgetSetupController <<Control>> {
+    - cycleModel : BudgetCycle
+    - setupView : InitializationView
+    + onContinueClicked() : void
+    + validateInputs(amt, start, end) : boolean
+    + createCycle(amt, start, end) : void
+    + calculateInitialDailyLimit() : float
+  }
+
+  class ExpenseController <<Control>> {
+    - transactionModel : Transaction
+    - dailyRecord : DailyRecord
+    - cycleModel : BudgetCycle
+    - expenseView : ExpenseEntryView
+    + onSaveClicked() : void
+    + validateAmount(amt) : boolean
+    + logExpense(amt, cat) : void
+  }
+
+  class DashboardController <<Control>> {
+    - cycleModel : BudgetCycle
+    - transactionModel : Transaction
+    - dailyRecord : DailyRecord
+    - dashView : DashboardView
+    + loadDashboard() : void
+    + calculateSafeDailyLimit() : float
+    + checkFinalDay() : boolean
+    + refreshDisplay() : void
+  }
+
+  class StatsController <<Control>> {
+    - transactionModel : Transaction
+    - categoryModel : Category
+    - statsView : StatsView
+    + loadStats() : void
+    + aggregateByCategory() : Map
+    + calculatePercentages(data) : Map
+    + buildPieChartData() : List
+  }
+
+  class RolloverController <<Control>> {
+    - dailyRecord : DailyRecord
+    - cycleModel : BudgetCycle
+    + processMidnightRollover() : void
+    + calculateNewDailyLimit() : float
+    + handleNegativeRollover() : void
+    + updateRemainingBalance() : void
+  }
+
+  class NotificationController <<Control>> {
+    - notifLog : NotificationLog
+    - notifView : NotificationView
+    + checkThreshold(spentPct) : void
+    + triggerAlert(type) : void
+    + prioritizeAlert(pct) : String
+    + hasAlreadyNotified(pct) : boolean
+  }
+}
+
+' ─────────────────────────────────────────
+' ACTOR
+actor "Time Scheduler" as TS
+
+' ─────────────────────────────────────────
+' MODEL RELATIONSHIPS
+BudgetCycle "1" o-- "*" Transaction
+BudgetCycle "1" *-- "*" DailyRecord
+BudgetCycle "1" o-- "*" NotificationLog
+Transaction "*" --> "1" Category
+
+' ─────────────────────────────────────────
+' CONTROLLER RELATIONSHIPS
+BudgetSetupController --> BudgetCycle
+BudgetSetupController --> InitializationView
+
+ExpenseController --> Transaction
+ExpenseController --> DailyRecord
+ExpenseController --> ExpenseEntryView
+
+DashboardController --> BudgetCycle
+DashboardController --> DailyRecord
+DashboardController --> DashboardView
+
+StatsController --> Transaction
+StatsController --> Category
+StatsController --> StatsView
+
+RolloverController --> DailyRecord
+RolloverController --> BudgetCycle
+
+NotificationController --> NotificationLog
+NotificationController --> NotificationView
+
+' DEPENDENCIES
+ExpenseController ..> NotificationController
+ExpenseController ..> DashboardController
+RolloverController ..> DashboardController
+
+TS --> RolloverController
+
+@enduml
