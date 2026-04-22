@@ -1,0 +1,205 @@
+@startuml Diagram2_DashboardStats_MVT
+allow_mixing
+top to bottom direction
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 15
+skinparam packageBackgroundColor #1D5D74
+skinparam packageFontColor #FFFFFF
+skinparam classBorderColor #1D5D74
+skinparam classArrowColor #D66D55
+skinparam ArrowThickness 3
+skinparam ClassFontSize 20
+skinparam classBackgroundColor #FFFFFF
+skinparam BackgroundColor #F1E5E8
+skinparam classFontColor #1D5D74
+
+title Diagram 2 - Dashboard and Stats Component (MVT)
+
+package "MODEL" #1D5D74 {
+
+  class DatabaseHelper <<Utility>> {
+    - DB_NAME : String
+    - DB_VERSION : int
+    --
+    + getConnection() : SQLiteDatabase
+    + onCreate(db : SQLiteDatabase) : void
+    + onUpgrade(db : SQLiteDatabase, oldV : int, newV : int) : void
+  }
+
+  class CycleDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + getActiveCycle() : BudgetCycle
+    + updateDailyLimit(id : int, limit : float) : void
+  }
+
+  class TransactionDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + getByCycle(cycleId : int) : List~Transaction~
+    + getTotalByCycle(cycleId : int) : float
+    + sumByCategory(cycleId : int, catId : int) : float
+  }
+
+  class CategoryDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + getAll() : List~Category~
+    + getById(id : int) : Category
+  }
+
+  class DailyRecordDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + getTodayRecord(cycleId : int) : DailyRecord
+    + getTotalSpent(cycleId : int) : float
+  }
+
+  class BudgetCycle <<Entity>> {
+    - id : int
+    - totalAllowance : float
+    - remainingBalance : float
+    - safeDailyLimit : float
+    - startDate : Date
+    - endDate : Date
+    - isActive : boolean
+    --
+    + getDaysRemaining() : int
+    + getRemainingBalance() : float
+  }
+
+  class Transaction <<Entity>> {
+    - id : int
+    - amount : float
+    - categoryId : int
+    - timestamp : DateTime
+    - cycleId : int
+    --
+    + getAmount() : float
+    + getCategoryId() : int
+  }
+
+  class Category <<Entity>> {
+    - id : int
+    - name : String
+    - iconResId : int
+    - colorHex : String
+    --
+    + getName() : String
+    + getSpendingPercentage(catTotal : float, grandTotal : float) : float
+  }
+
+  class DailyRecord <<Entity>> {
+    - id : int
+    - date : Date
+    - allocatedLimit : float
+    - totalSpent : float
+    - cycleId : int
+    --
+    + getTotalSpent() : float
+    + getUnspentAmount() : float
+  }
+
+  CycleDAO "1" --> "1" DatabaseHelper : "uses"
+  TransactionDAO "1" --> "1" DatabaseHelper : "uses"
+  CategoryDAO "1" --> "1" DatabaseHelper : "uses"
+  DailyRecordDAO "1" --> "1" DatabaseHelper : "uses"
+
+  CycleDAO "1" ..> "*" BudgetCycle : "manages"
+  TransactionDAO "1" ..> "*" Transaction : "manages"
+  CategoryDAO "1" ..> "*" Category : "manages"
+  DailyRecordDAO "1" ..> "*" DailyRecord : "manages"
+
+  BudgetCycle "1" *-- "*" DailyRecord : "tracks"
+  BudgetCycle "1" o-- "*" Transaction : "contains"
+  Transaction "*" --> "1" Category : "belongs to"
+}
+
+package "VIEW" #88b4c3 {
+
+  class DashboardView <<View>> {
+    - template : DashboardTemplate
+    - cycleDAO : CycleDAO
+    - dailyRecordDAO : DailyRecordDAO
+    --
+    + loadDashboard() : void
+    + calculateSafeDailyLimit(balance : float, daysLeft : int) : float
+    + checkFinalDay(cycle : BudgetCycle) : boolean
+    + detectTightBudget(newLimit : float, oldLimit : float) : boolean
+    + refreshDisplay() : void
+  }
+
+  class StatsView <<View>> {
+    - template : StatsTemplate
+    - transactionDAO : TransactionDAO
+    - categoryDAO : CategoryDAO
+    --
+    + loadStats(cycleId : int) : void
+    + aggregateByCategory(cycleId : int) : Map~String.Float~
+    + calculatePercentages(data : Map~String.Float~) : Map~String.Float~
+    + buildPieChartData(cycleId : int) : List~PieEntry~
+    + hasTransactions(cycleId : int) : boolean
+  }
+}
+
+package "TEMPLATE" #6c7e87 {
+
+  interface ITemplate <<interface>> {
+    + showError(msg : String) : void
+    + showLoading() : void
+    + hideLoading() : void
+  }
+
+  class DashboardTemplate <<Template>> {
+    - dailyLimitLabel : TextView
+    - remainingBalanceLabel : TextView
+    - logExpenseBtn : Button
+    - finalDayBadge : View
+    - limitColorIndicator : View
+    - alertBanner : View
+    --
+    + displayDailyLimit(amount : float) : void
+    + displayRemainingBalance(amt : float) : void
+    + showFinalDayBadge() : void
+    + highlightWarning(color : String) : void
+    + showError(msg : String) : void
+    + showLoading() : void
+    + hideLoading() : void
+    + refresh() : void
+  }
+
+  class StatsTemplate <<Template>> {
+    - pieChart : PieChart
+    - categoryLegend : ListView
+    - totalSpentLabel : TextView
+    - emptyStateMsg : TextView
+    --
+    + renderPieChart(data : Map~String.Float~) : void
+    + updateCategoryLegend(list : List~Category~) : void
+    + showTotalSpent(amt : float) : void
+    + showEmptyState() : void
+    + showError(msg : String) : void
+    + showLoading() : void
+    + hideLoading() : void
+  }
+
+  ITemplate <|.. DashboardTemplate : <<realizes>>
+  ITemplate <|.. StatsTemplate : <<realizes>>
+}
+
+' TEMPLATE -> VIEW (user interaction triggers View)
+DashboardTemplate "1" ..> "1" DashboardView : "triggers"
+StatsTemplate "1" ..> "1" StatsView : "triggers"
+
+' VIEW -> TEMPLATE (View updates Template)
+DashboardView "1" --> "1" DashboardTemplate : "updates"
+StatsView "1" --> "1" StatsTemplate : "updates"
+
+' VIEW -> DAO (View interacts with Model)
+DashboardView "1" --> "1" CycleDAO : "reads cycle"
+DashboardView "1" --> "1" DailyRecordDAO : "reads record"
+StatsView "1" --> "1" TransactionDAO : "reads transactions"
+StatsView "1" --> "1" CategoryDAO : "reads categories"
+
+@enduml

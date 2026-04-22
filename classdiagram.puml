@@ -1,26 +1,35 @@
 @startuml
 allow_mixing
-left to right direction
+top to bottom direction
 skinparam linetype ortho
 skinparam shadowing false
 skinparam roundcorner 15
-skinparam packageBackgroundColor transparent
-skinparam packageFontColor #F7F4D5
-skinparam classBorderColor #555
-skinparam classArrowColor #D3968C
+skinparam packageBackgroundColor #1D5D74
+skinparam packageFontColor #FFFFFF
+skinparam classBorderColor #1D5D74
+skinparam classArrowColor #D66D55
 skinparam ArrowThickness 3
 skinparam ClassFontSize 20
-skinparam classBackgroundColor #F7F4D5
-skinparam BackgroundColor #F7F4D5
-skinparam classFontColor #105666
-skinparam shadowing false
-skinparam roundcorner 15
-
+skinparam classBackgroundColor #FFFFFF
+skinparam BackgroundColor #F1E5E8
+skinparam classFontColor #1D5D74
+ 
 ' ─────────────────────────────────────────
-package "MODEL" #839958 {
+package "MODEL" #1D5D74 {
+
+  class DatabaseHelper <<Utility>> {
+    - DB_NAME : String
+    - DB_VERSION : int
+    + insert(table, values) : long
+    + query(table, where) : Cursor
+    + update(table, values, where) : int
+    + delete(table, where) : int
+    + beginTransaction() : void
+    + endTransaction() : void
+  }
 
   class BudgetCycle <<Entity>> {
-    - id : int    
+    - id : int
     - totalAllowance : float
     - startDate : Date
     - endDate : Date
@@ -43,6 +52,8 @@ package "MODEL" #839958 {
     + getAmount() : float
     + getCategory() : String
     + getByCycle(cycleId) : List
+    + filterByCategory(cat) : List
+    + filterByDate(date) : List
   }
 
   class DailyRecord <<Entity>> {
@@ -73,13 +84,22 @@ package "MODEL" #839958 {
     + getAll() : List
     + addCustom(name) : void
   }
+
+  ' ── Model → DatabaseHelper
+  BudgetCycle    ..> DatabaseHelper : uses >
+  Transaction    ..> DatabaseHelper : uses >
+  DailyRecord    ..> DatabaseHelper : uses >
+  NotificationLog ..> DatabaseHelper : uses >
+  Category       ..> DatabaseHelper : uses >
 }
 
 ' ─────────────────────────────────────────
-package "VIEW" #1a3d2b {
+package "VIEW" #6c7e87 {
 
   interface BaseView {
     + showError(msg) : void
+    + showLoading() : void
+    + hideLoading() : void
   }
 
   class InitializationView <<Boundary>> {
@@ -89,6 +109,9 @@ package "VIEW" #1a3d2b {
     - continueBtn : Button
     + showValidationError(msg) : void
     + navigateToDashboard() : void
+    + showError(msg) : void
+    + showLoading() : void
+    + hideLoading() : void
   }
 
   class ExpenseEntryView <<Boundary>> {
@@ -99,6 +122,8 @@ package "VIEW" #1a3d2b {
     + showError(msg) : void
     + showSavedConfirmation() : void
     + navigateToDashboard() : void
+    + showLoading() : void
+    + hideLoading() : void
   }
 
   class DashboardView <<Boundary>> {
@@ -112,6 +137,9 @@ package "VIEW" #1a3d2b {
     + showFinalDayBadge() : void
     + highlightWarning(color) : void
     + showBudgetAlert(msg) : void
+    + showError(msg) : void
+    + showLoading() : void
+    + hideLoading() : void
   }
 
   class StatsView <<Boundary>> {
@@ -121,6 +149,9 @@ package "VIEW" #1a3d2b {
     + renderPieChart(data) : void
     + showEmptyState() : void
     + updateCategoryLegend(categories) : void
+    + showError(msg) : void
+    + showLoading() : void
+    + hideLoading() : void
   }
 
   class NotificationView <<Boundary>> {
@@ -130,14 +161,35 @@ package "VIEW" #1a3d2b {
     + showThresholdAlert(pct) : void
     + showExhaustedAlert() : void
     + dismiss() : void
+    + showError(msg) : void
+    + showLoading() : void
+    + hideLoading() : void
   }
 
+  ' ── US#7 ── ADDED
+  class HistoryView <<Boundary>> {
+    - transactionList : RecyclerView
+    - categoryFilter : Spinner
+    - dateFilter : DatePicker
+    - clearFilterBtn : Button
+    + displayTransactions(list) : void
+    + showEmptyState() : void
+    + applyFilter(category, date) : void
+    + showError(msg) : void
+    + showLoading() : void
+    + hideLoading() : void
+  }
+
+  BaseView <|.. InitializationView
   BaseView <|.. ExpenseEntryView
   BaseView <|.. DashboardView
+  BaseView <|.. StatsView
+  BaseView <|.. NotificationView
+  BaseView <|.. HistoryView
 }
 
 ' ─────────────────────────────────────────
-package "CONTROLLER" #105666 {
+package "CONTROLLER" #7bbed4 {
 
   class BudgetSetupController <<Control>> {
     - cycleModel : BudgetCycle
@@ -196,47 +248,72 @@ package "CONTROLLER" #105666 {
     + prioritizeAlert(pct) : String
     + hasAlreadyNotified(pct) : boolean
   }
+
+  ' ── US#7 ── ADDED
+  class HistoryController <<Control>> {
+    - transactionModel : Transaction
+    - categoryModel : Category
+    - historyView : HistoryView
+    + loadHistory(cycleId) : void
+    + filterByCategory(cycleId, category) : void
+    + filterByDate(cycleId, date) : void
+    + clearFilters(cycleId) : void
+  }
 }
 
 ' ─────────────────────────────────────────
-' ACTOR
+' ACTORS  ── Student ADDED
+actor "Student" as ST
 actor "Time Scheduler" as TS
 
 ' ─────────────────────────────────────────
 ' MODEL RELATIONSHIPS
-BudgetCycle "1" o-- "*" Transaction
-BudgetCycle "1" *-- "*" DailyRecord
-BudgetCycle "1" o-- "*" NotificationLog
-Transaction "*" --> "1" Category
+BudgetCycle    "1" o-- "*" Transaction
+BudgetCycle    "1" *-- "*" DailyRecord
+BudgetCycle    "1" o-- "*" NotificationLog
+Transaction    "*" --> "1" Category
 
 ' ─────────────────────────────────────────
-' CONTROLLER RELATIONSHIPS
-BudgetSetupController --> BudgetCycle
-BudgetSetupController --> InitializationView
-
-ExpenseController --> Transaction
-ExpenseController --> DailyRecord
-ExpenseController --> ExpenseEntryView
-
-DashboardController --> BudgetCycle
-DashboardController --> DailyRecord
-DashboardController --> DashboardView
-
-StatsController --> Transaction
-StatsController --> Category
-StatsController --> StatsView
-
-RolloverController --> DailyRecord
-RolloverController --> BudgetCycle
-
+' CONTROLLER → MODEL
+BudgetSetupController  --> BudgetCycle
+ExpenseController      --> Transaction
+ExpenseController      --> DailyRecord
+DashboardController    --> BudgetCycle
+DashboardController    --> DailyRecord
+StatsController        --> Transaction
+StatsController        --> Category
+RolloverController     --> DailyRecord
+RolloverController     --> BudgetCycle
 NotificationController --> NotificationLog
+HistoryController      --> Transaction
+HistoryController      --> Category
+
+' CONTROLLER → VIEW
+BudgetSetupController  --> InitializationView
+ExpenseController      --> ExpenseEntryView
+DashboardController    --> DashboardView
+StatsController        --> StatsView
 NotificationController --> NotificationView
+HistoryController      --> HistoryView
 
-' DEPENDENCIES
-ExpenseController ..> NotificationController
-ExpenseController ..> DashboardController
-RolloverController ..> DashboardController
+' VIEW → CONTROLLER  ── ADDED (user-triggered events)
+InitializationView .up.> BudgetSetupController  : onContinueClicked >
+ExpenseEntryView   .up.> ExpenseController       : onSaveClicked >
+DashboardView      .up.> DashboardController     : onLoad >
+StatsView          .up.> StatsController         : onLoad >
+HistoryView        .up.> HistoryController       : onFilter >
 
+' CONTROLLER INTER-DEPENDENCIES
+ExpenseController  ..> NotificationController : triggers >
+ExpenseController  ..> DashboardController    : refreshes >
+RolloverController ..> DashboardController    : refreshes >
+
+' ACTORS → CONTROLLERS  ── Student ADDED
+ST --> BudgetSetupController
+ST --> ExpenseController
+ST --> DashboardController
+ST --> StatsController
+ST --> HistoryController
 TS --> RolloverController
 
 @enduml

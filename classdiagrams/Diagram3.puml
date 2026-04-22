@@ -1,0 +1,211 @@
+@startuml Diagram3_NotificationHistory_MVT
+allow_mixing
+top to bottom direction
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 15
+skinparam packageBackgroundColor #1D5D74
+skinparam packageFontColor #FFFFFF
+skinparam classBorderColor #1D5D74
+skinparam classArrowColor #D66D55
+skinparam ArrowThickness 3
+skinparam ClassFontSize 20
+skinparam classBackgroundColor #FFFFFF
+skinparam BackgroundColor #F1E5E8
+skinparam classFontColor #1D5D74
+
+title Diagram 3 - Notification and History Component (MVT)
+
+package "MODEL" #1D5D74 {
+
+  enum AlertType <<enumeration>> {
+    WARNING_80
+    EXHAUSTED_100
+  }
+
+  class DatabaseHelper <<Utility>> {
+    - DB_NAME : String
+    - DB_VERSION : int
+    --
+    + getConnection() : SQLiteDatabase
+    + onCreate(db : SQLiteDatabase) : void
+    + onUpgrade(db : SQLiteDatabase, oldV : int, newV : int) : void
+  }
+
+  class NotificationDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + insertLog(log : NotificationLog) : long
+    + isAlreadySent(cycleId : int, pct : int) : boolean
+    + markAsSent(id : int) : void
+  }
+
+  class TransactionDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + getByCycle(cycleId : int) : List~Transaction~
+    + filterByCategory(cycleId : int, catId : int) : List~Transaction~
+    + filterByDate(cycleId : int, date : Date) : List~Transaction~
+    + filterByCategoryAndDate(cycleId : int, catId : int, date : Date) : List~Transaction~
+  }
+
+  class CategoryDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + getAll() : List~Category~
+    + getById(id : int) : Category
+  }
+
+  class CycleDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + getActiveCycle() : BudgetCycle
+    + getSpentPercentage(cycleId : int) : float
+  }
+
+  class NotificationLog <<Entity>> {
+    - id : int
+    - cycleId : int
+    - thresholdPct : int
+    - type : AlertType
+    - sentAt : DateTime
+    - isTriggered : boolean
+    --
+    + markAsSent() : void
+    + isAlreadySent(pct : int) : boolean
+  }
+
+  class BudgetCycle <<Entity>> {
+    - id : int
+    - totalAllowance : float
+    - remainingBalance : float
+    - isActive : boolean
+    --
+    + getSpentPercentage() : float
+    + getTotalAllowance() : float
+  }
+
+  class Transaction <<Entity>> {
+    - id : int
+    - amount : float
+    - categoryId : int
+    - timestamp : DateTime
+    - cycleId : int
+    --
+    + getAmount() : float
+    + getTimestamp() : DateTime
+  }
+
+  class Category <<Entity>> {
+    - id : int
+    - name : String
+    - iconResId : int
+    --
+    + getName() : String
+  }
+
+  NotificationDAO "1" --> "1" DatabaseHelper : "uses"
+  TransactionDAO "1" --> "1" DatabaseHelper : "uses"
+  CategoryDAO "1" --> "1" DatabaseHelper : "uses"
+  CycleDAO "1" --> "1" DatabaseHelper : "uses"
+
+  NotificationDAO "1" ..> "*" NotificationLog : "manages"
+  TransactionDAO "1" ..> "*" Transaction : "manages"
+  CategoryDAO "1" ..> "*" Category : "manages"
+  CycleDAO "1" ..> "*" BudgetCycle : "manages"
+
+  NotificationLog --> AlertType : "uses"
+  BudgetCycle "1" o-- "*" NotificationLog : "monitors"
+  Transaction "*" --> "1" Category : "belongs to"
+}
+
+package "VIEW" #88b4c3 {
+
+  class ExpenseView <<View>> {
+    - transactionDAO : TransactionDAO
+    - cycleDAO : CycleDAO
+    --
+    + logExpense(amt : float, catId : int) : void
+  }
+
+  class NotificationView <<View>> {
+    - notificationDAO : NotificationDAO
+    - cycleDAO : CycleDAO
+    - template : NotificationTemplate
+    --
+    + checkThreshold(cycleId : int, spentPct : float) : void
+    + evaluateThreshold(spent : float, allowance : float) : int
+    + prioritizeAlert(pct : int) : AlertType
+    + triggerAlert(type : AlertType) : void
+    + hasAlreadyNotified(cycleId : int, pct : int) : boolean
+  }
+
+  class HistoryView <<View>> {
+    - template : HistoryTemplate
+    - transactionDAO : TransactionDAO
+    - categoryDAO : CategoryDAO
+    --
+    + loadHistory(cycleId : int) : void
+    + filterByCategory(cycleId : int, category : String) : void
+    + filterByDate(cycleId : int, date : Date) : void
+    + filterByCategoryAndDate(cycleId : int, category : String, date : Date) : void
+    + clearFilters(cycleId : int) : void
+    + hasTransactions(cycleId : int) : boolean
+  }
+}
+
+package "TEMPLATE" #6c7e87 {
+
+  interface ITemplate <<interface>> {
+    + showError(msg : String) : void
+    + showLoading() : void
+    + hideLoading() : void
+  }
+
+  class NotificationTemplate <<Template>> {
+    - channelId : String
+    - notificationManager : NotificationManager
+    --
+    + showThresholdAlert(pct : int, msg : String) : void
+    + showExhaustedAlert() : void
+    + dismiss() : void
+    + showError(msg : String) : void
+    + showLoading() : void
+    + hideLoading() : void
+  }
+
+  class HistoryTemplate <<Template>> {
+    - transactionList : RecyclerView
+    - categoryFilterSpinner : Spinner
+    - dateFilterPicker : DatePicker
+    - clearFilterBtn : Button
+    - emptyStateMsg : TextView
+    --
+    + displayTransactions(list : List~Transaction~) : void
+    + showEmptyState() : void
+    + applyFilter(category : String, date : Date) : void
+    + clearFilters() : void
+    + showError(msg : String) : void
+    + showLoading() : void
+    + hideLoading() : void
+  }
+
+  ITemplate <|.. NotificationTemplate : <<realizes>>
+  ITemplate <|.. HistoryTemplate : <<realizes>>
+}
+
+' TEMPLATE -> VIEW (user interaction triggers View)
+HistoryTemplate "1" ..> "1" HistoryView : "triggers"
+
+' VIEW -> TEMPLATE (View updates Template)
+NotificationView "1" --> "1" NotificationTemplate : "triggers"
+HistoryView "1" --> "1" HistoryTemplate : "updates"
+
+' VIEW -> DAO (View interacts with Model)
+ExpenseView "1" ..> "1" NotificationView : "notifies after save"
+NotificationView "1" --> "1" CycleDAO : "reads cycle"
+NotificationView "1" --> "1" NotificationDAO : "creates log"
+HistoryView "1" --> "1" TransactionDAO : "reads transactions"
+HistoryView "1" --> "1" CategoryDAO : "reads categories"
+
+@enduml

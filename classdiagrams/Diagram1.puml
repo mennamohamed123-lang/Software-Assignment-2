@@ -1,0 +1,263 @@
+@startuml Diagram1_BudgetExpense_MVT
+allow_mixing
+top to bottom direction
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 15
+skinparam packageBackgroundColor #1D5D74
+skinparam packageFontColor #FFFFFF
+skinparam classBorderColor #1D5D74
+skinparam classArrowColor #D66D55
+skinparam ArrowThickness 3
+skinparam ClassFontSize 20
+skinparam classBackgroundColor #FFFFFF
+skinparam BackgroundColor #F1E5E8
+skinparam classFontColor #1D5D74
+
+title Diagram 1 - Budget and Expense Component (MVT)
+
+package "MODEL" #1D5D74 {
+
+  class DatabaseHelper <<Utility>> {
+    - DB_NAME : String
+    - DB_VERSION : int
+    --
+    + getConnection() : SQLiteDatabase
+    + onCreate(db : SQLiteDatabase) : void
+    + onUpgrade(db : SQLiteDatabase, oldV : int, newV : int) : void
+  }
+
+  class CycleDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + insertCycle(cycle : BudgetCycle) : long
+    + getActiveCycle() : BudgetCycle
+    + updateBalance(id : int, balance : float) : void
+    + updateDailyLimit(id : int, limit : float) : void
+    + closeCycle(id : int) : void
+  }
+
+  class TransactionDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + insertTransaction(t : Transaction) : long
+    + getByCycle(cycleId : int) : List~Transaction~
+    + getTotalByCycle(cycleId : int) : float
+    + sumByCategory(cycleId : int, catId : int) : float
+    + getByDate(cycleId : int, date : Date) : List~Transaction~
+  }
+
+  class CategoryDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + getAll() : List~Category~
+    + getById(id : int) : Category
+    + insertCategory(cat : Category) : long
+  }
+
+  class DailyRecordDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + insertRecord(record : DailyRecord) : long
+    + getByDate(date : Date, cycleId : int) : DailyRecord
+    + updateSpending(id : int, spent : float) : void
+  }
+
+  class BudgetCycle <<Entity>> {
+    - id : int
+    - totalAllowance : float
+    - startDate : Date
+    - endDate : Date
+    - remainingBalance : float
+    - safeDailyLimit : float
+    - isActive : boolean
+    --
+    + getTotalDays() : int
+    + getDaysRemaining() : int
+    + getRemainingBalance() : float
+    + getSpentPercentage() : float
+    + deductFromBalance(amt : float) : void
+  }
+
+  class Transaction <<Entity>> {
+    - id : int
+    - amount : float
+    - categoryId : int
+    - timestamp : DateTime
+    - cycleId : int
+    --
+    + getAmount() : float
+    + getCategoryId() : int
+    + getTimestamp() : DateTime
+  }
+
+  class Category <<Entity>> {
+    - id : int
+    - name : String
+    - iconResId : int
+    --
+    + getName() : String
+    + getSpendingPercentage(catTotal : float, grandTotal : float) : float
+  }
+
+  class DailyRecord <<Entity>> {
+    - id : int
+    - date : Date
+    - allocatedLimit : float
+    - totalSpent : float
+    - cycleId : int
+    --
+    + getUnspentAmount() : float
+    + rolloverAmount() : float
+    + isOverspent() : boolean
+  }
+
+  CycleDAO "1" --> "1" DatabaseHelper : "uses"
+  TransactionDAO "1" --> "1" DatabaseHelper : "uses"
+  CategoryDAO "1" --> "1" DatabaseHelper : "uses"
+  DailyRecordDAO "1" --> "1" DatabaseHelper : "uses"
+
+  CycleDAO "1" ..> "*" BudgetCycle : "manages"
+  TransactionDAO "1" ..> "*" Transaction : "manages"
+  CategoryDAO "1" ..> "*" Category : "manages"
+  DailyRecordDAO "1" ..> "*" DailyRecord : "manages"
+
+  BudgetCycle "1" *-- "*" DailyRecord : "tracks"
+  BudgetCycle "1" o-- "*" Transaction : "contains"
+  Transaction "*" --> "1" Category : "belongs to"
+}
+
+package "VIEW" #88b4c3 {
+
+  class BudgetSetupView <<View>> {
+    - template : InitializationTemplate
+    - cycleDAO : CycleDAO
+    --
+    + onContinueClicked() : void
+    + validateInputs(amt : float, start : Date, end : Date) : boolean
+    + createCycle(amt : float, start : Date, end : Date) : void
+    + calculateInitialDailyLimit(amt : float, days : int) : float
+  }
+
+  class ExpenseView <<View>> {
+    - template : ExpenseEntryTemplate
+    - transactionDAO : TransactionDAO
+    - dailyRecordDAO : DailyRecordDAO
+    - cycleDAO : CycleDAO
+    --
+    + onSaveClicked() : void
+    + validateAmount(amt : float) : boolean
+    + validateCategory(catId : int) : boolean
+    + logExpense(amt : float, catId : int) : void
+  }
+
+  class RolloverView <<View>> {
+    - dailyRecordDAO : DailyRecordDAO
+    - cycleDAO : CycleDAO
+    --
+    + processMidnightRollover() : void
+    + detectNewDay(lastLogin : DateTime) : boolean
+    + calculateNewDailyLimit(balance : float, daysLeft : int) : float
+    + handlePositiveRollover(unspent : float) : void
+    + handleNegativeRollover(deficit : float) : void
+    + updateRemainingBalance(bal : float) : void
+  }
+
+  class DashboardView <<View>> {
+    - template : DashboardTemplate
+    - cycleDAO : CycleDAO
+    - dailyRecordDAO : DailyRecordDAO
+    --
+    + loadDashboard() : void
+    + calculateSafeDailyLimit(balance : float, daysLeft : int) : float
+    + checkFinalDay(cycle : BudgetCycle) : boolean
+    + detectTightBudget(newLimit : float, oldLimit : float) : boolean
+    + refreshDisplay() : void
+  }
+}
+
+package "TEMPLATE" #6c7e87 {
+
+  interface ITemplate <<interface>> {
+    + showError(msg : String) : void
+    + showLoading() : void
+    + hideLoading() : void
+  }
+
+  class InitializationTemplate <<Template>> {
+    - allowanceInput : EditText
+    - startDatePicker : DatePicker
+    - endDatePicker : DatePicker
+    - continueBtn : Button
+    - errorLabel : TextView
+    --
+    + getAmount() : float
+    + getStartDate() : Date
+    + getEndDate() : Date
+    + showValidationError(msg : String) : void
+    + showLoading() : void
+    + hideLoading() : void
+    + showError(msg : String) : void
+    + navigateToDashboard() : void
+  }
+
+  class ExpenseEntryTemplate <<Template>> {
+    - amountInput : EditText
+    - categoryGrid : GridView
+    - saveBtn : Button
+    - cancelBtn : Button
+    - errorLabel : TextView
+    --
+    + getAmount() : float
+    + getSelectedCategoryId() : int
+    + showError(msg : String) : void
+    + showSavedConfirmation() : void
+    + showLoading() : void
+    + hideLoading() : void
+    + navigateToDashboard() : void
+  }
+
+  class DashboardTemplate <<Template>> {
+    - dailyLimitLabel : TextView
+    - remainingBalanceLabel : TextView
+    - logExpenseBtn : Button
+    - finalDayBadge : View
+    - limitColorIndicator : View
+    --
+    + displayDailyLimit(amount : float) : void
+    + displayRemainingBalance(amt : float) : void
+    + showFinalDayBadge() : void
+    + highlightWarning(color : String) : void
+    + showError(msg : String) : void
+    + showLoading() : void
+    + hideLoading() : void
+    + refresh() : void
+  }
+
+  ITemplate <|.. InitializationTemplate : <<realizes>>
+  ITemplate <|.. ExpenseEntryTemplate : <<realizes>>
+  ITemplate <|.. DashboardTemplate : <<realizes>>
+}
+
+' TEMPLATE -> VIEW (user interaction triggers View)
+InitializationTemplate "1" ..> "1" BudgetSetupView : "triggers"
+ExpenseEntryTemplate "1" ..> "1" ExpenseView : "triggers"
+DashboardTemplate "1" ..> "1" DashboardView : "triggers"
+
+' VIEW -> TEMPLATE (View updates Template)
+BudgetSetupView "1" --> "1" InitializationTemplate : "updates"
+ExpenseView "1" --> "1" ExpenseEntryTemplate : "updates"
+DashboardView "1" --> "1" DashboardTemplate : "updates"
+RolloverView "1" ..> "1" DashboardView : "notifies"
+
+' VIEW -> DAO (View interacts with Model)
+BudgetSetupView "1" --> "1" CycleDAO : "creates cycle"
+ExpenseView "1" --> "1" TransactionDAO : "inserts transaction"
+ExpenseView "1" --> "1" DailyRecordDAO : "updates record"
+ExpenseView "1" --> "1" CycleDAO : "reads cycle"
+RolloverView "1" --> "1" DailyRecordDAO : "reads record"
+RolloverView "1" --> "1" CycleDAO : "updates cycle"
+DashboardView "1" --> "1" CycleDAO : "reads cycle"
+DashboardView "1" --> "1" DailyRecordDAO : "reads record"
+
+@enduml

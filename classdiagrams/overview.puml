@@ -1,0 +1,32 @@
+@startuml Overview
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam roundcorner 10
+skinparam packageBackgroundColor #1D5D74
+skinparam packageFontColor #FFFFFF
+skinparam classBorderColor #1D5D74
+skinparam classArrowColor #D66D55
+skinparam ArrowThickness 3
+skinparam ClassFontSize 20
+skinparam classBackgroundColor #FFFFFF
+skinparam BackgroundColor #F1E5E8
+skinparam classFontColor #1D5D74
+skinparam packageFontColor white
+skinparam ClassFontSize 13
+
+title Masroofy - System Overview (MVT)
+
+package "Budget & Expense Component"  #1D5D74 {
+}
+
+package "Dashboard & Stats Component" #6c7e87  {
+}
+
+package "Notification & History Component" #88b4c3 {
+}
+
+[Budget & Expense Component] ..> [Dashboard & Stats Component] : "shares BudgetCycle\nDailyRecord"
+[Budget & Expense Component] ..> [Notification & History Component] : "triggers alerts\nvia ExpenseView"
+[Dashboard & Stats Component] ..> [Notification & History Component] : "shares Transaction\nCategory"
+
+@enduml
