@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Expense History - Masroofy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f8f9fa; }
+        .sidebar { background-color: #1D5D74; min-height: 100vh; padding: 20px 0; }
+        .sidebar a { color: #ffffffcc; text-decoration: none; display: block; padding: 12px 20px; border-radius: 8px; margin: 4px 10px; }
+        .sidebar a:hover, .sidebar a.active { background-color: #D66D55; color: white; }
+        .sidebar .brand { color: white; font-size: 1.4rem; font-weight: bold; padding: 10px 20px 30px; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .stat-card { border-left: 4px solid #1D5D74; }
+        .table thead { background-color: #1D5D74; color: white; }
+        .btn-primary { background-color: #1D5D74; border-color: #1D5D74; }
+        .btn-primary:hover { background-color: #D66D55; border-color: #D66D55; }
+        .badge-category { background-color: #e8f4f8; color: #1D5D74; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar p-0">
+            <div class="brand"><i class="bi bi-wallet2"></i> Masroofy</div>
+            <a href="/history/" class="active"><i class="bi bi-clock-history me-2"></i> History</a>
+            <a href="/dashboard/"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+            <a href="/stats/"><i class="bi bi-bar-chart me-2"></i> Stats</a>
+            <a href="/notifications/check/"><i class="bi bi-bell me-2"></i> Notifications</a>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10 p-4">
+            <h4 class="mb-4 text-muted"><i class="bi bi-clock-history"></i> Expense History</h4>
+
+            <!-- Stat Cards -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card stat-card p-3">
+                        <div class="text-muted small">Total Transactions</div>
+                        <div class="fs-3 fw-bold text-dark">{{ transactions|length }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stat-card p-3" style="border-left-color: #D66D55;">
+                        <div class="text-muted small">Total Spent</div>
+                        <div class="fs-3 fw-bold text-danger">
+                            {% if transactions %}
+                                {% with total=0 %}
+                                    {% for t in transactions %}{{ t.amount }}{% if not forloop.last %}+{% endif %}{% endfor %}
+                                {% endwith %}
+                            {% else %}
+                                0
+                            {% endif %}
+                            EGP
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stat-card p-3" style="border-left-color: #28a745;">
+                        <div class="text-muted small">Categories Used</div>
+                        <div class="fs-3 fw-bold text-success">{{ categories|length }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart + Filter Row -->
+            <div class="row mb-4">
+
+                <!-- Chart -->
+                <div class="col-md-5">
+                    <div class="card p-3">
+                        <h6 class="text-muted mb-3"><i class="bi bi-pie-chart"></i> Spending by Category</h6>
+                        <canvas id="spendingChart" height="220"></canvas>
+                        <div id="noDataMsg" style="display:none;" class="text-center text-muted py-4">
+                            <i class="bi bi-pie-chart fs-3 d-block mb-2"></i>
+                            No spending data yet
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter -->
+                <div class="col-md-7">
+                    <div class="card p-3">
+                        <h6 class="text-muted mb-3"><i class="bi bi-funnel"></i> Filter Transactions</h6>
+                        <form method="GET">
+                            <div class="mb-3">
+                                <label class="form-label">Category</label>
+                                <select name="category" class="form-select">
+                                    <option value="">All Categories</option>
+                                    {% for cat in categories %}
+                                        <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ cat.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> Filter
+                                </button>
+                                <a href="/history/" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Clear
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions Table -->
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">
+                        <i class="bi bi-list-ul"></i> Transactions
+                        <span class="badge bg-secondary ms-2">{{ transactions|length }}</span>
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Amount</th>
+                                    <th>Category</th>
+                                    <th>Date & Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for t in transactions %}
+                                <tr>
+                                    <td class="text-muted">{{ forloop.counter }}</td>
+                                    <td class="fw-bold text-danger">{{ t.amount }} EGP</td>
+                                    <td><span class="badge-category">{{ t.category.name }}</span></td>
+                                    <td class="text-muted">{{ t.timestamp|date:"M d, Y — H:i" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                        No transactions found
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const ctx = document.getElementById('spendingChart').getContext('2d');
+    const labels = [{% for cat in categories %}"{{ cat.name }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+    const hasData = {{ transactions|length }} > 0;
+
+    if (!hasData) {
+        document.getElementById('spendingChart').style.display = 'none';
+        document.getElementById('noDataMsg').style.display = 'block';
+    } else {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: labels.map(() => Math.floor(Math.random() * 500) + 100),
+                    backgroundColor: ['#1D5D74','#D66D55','#88b4c3','#6c7e87','#f0a500','#28a745'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                plugins: { legend: { position: 'bottom' } },
+                cutout: '65%'
+            }
+        });
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
