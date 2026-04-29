@@ -98,18 +98,25 @@ def record_expense(request):
 
     return render(request, "budget/expense_entry.html", context)
 
+def get_notification_alert(cycle):
+    if not cycle:
+        return None
+    spent_pct = cycle.get_spent_percentage()
+    if spent_pct >= 100:
+        return {'type': 'danger', 'msg': '🚨 Budget Exhausted! You have spent 100% of your budget.', 'pct': spent_pct}
+    elif spent_pct >= 80:
+        return {'type': 'warning', 'msg': '⚠️ Warning! You have spent 80% of your budget.', 'pct': spent_pct}
+    return None
+
 
 # =========================
 # HISTORY VIEW (MAIN FIXED)
 # =========================
 class HistoryView(View):
-
     def get(self, request):
-
-        transactions = Transaction.objects.select_related("category").order_by('-timestamp')
+        transactions = Transaction.objects.all().order_by('-timestamp')
         categories = Category.objects.all()
 
-        # filters
         category_id = request.GET.get('category')
         if category_id:
             transactions = transactions.filter(category_id=category_id)
@@ -118,81 +125,57 @@ class HistoryView(View):
         if date_filter:
             transactions = transactions.filter(timestamp__date=date_filter)
 
-        # total spent
-        total_spent = transactions.aggregate(total=Sum('amount'))['total'] or 0
+        total_spent = sum(t.amount for t in transactions)
 
-        # JSON for chart
-        categories_json = json.dumps(list(categories.values('name')))
-
-        context = {
-            "transactions": transactions,
-            "categories": categories,
-            "total_spent": total_spent,
-            "categories_json": categories_json,
-        }
-
-        return render(request, "history.html", context)
-
-
-# =========================
-# NOTIFICATION VIEW (SAFE)
-# =========================
-class NotificationView(View):
-
-    def get(self, request):
+        category_totals = []
+        for cat in categories:
+            cat_total = sum(t.amount for t in transactions if t.category_id == cat.id)
+            category_totals.append(cat_total)
 
         cycle = BudgetCycle.objects.filter(is_active=True).first()
+        alert = get_notification_alert(cycle)
 
-        transactions = Transaction.objects.select_related("category")
-        categories = Category.objects.all()
+        context = {
+            'transactions': transactions,
+            'categories': categories,
+            'total_spent': total_spent,
+            'category_totals': category_totals,
+            'alert': alert,
+        }
+        return render(request, 'history.html', context)
+
+
+class NotificationView(View):
+    def get(self, request):
+        cycle = BudgetCycle.objects.filter(is_active=True).first()
 
         if not cycle:
-            return render(request, "history.html", {
-                "transactions": transactions,
-                "categories": categories,
-                "total_spent": 0,
-                "categories_json": json.dumps(list(categories.values('name'))),
-                "message": "مفيش cycle نشط"
-            })
+            return render(request, 'notifications.html', {'message': 'No active cycle found'})
 
         spent_pct = cycle.get_spent_percentage()
         notification = None
 
         if spent_pct >= 100:
             already = NotificationLog.objects.filter(
-                cycle=cycle,
-                threshold_pct=100,
-                is_triggered=True
+                cycle=cycle, threshold_pct=100, is_triggered=True
             ).exists()
-
             if not already:
                 notification = NotificationLog.objects.create(
-                    cycle=cycle,
-                    threshold_pct=100,
-                    type='EXHAUSTED_100'
+                    cycle=cycle, threshold_pct=100, type='EXHAUSTED_100'
                 )
                 notification.mark_as_sent()
 
         elif spent_pct >= 80:
             already = NotificationLog.objects.filter(
-                cycle=cycle,
-                threshold_pct=80,
-                is_triggered=True
+                cycle=cycle, threshold_pct=80, is_triggered=True
             ).exists()
-
             if not already:
                 notification = NotificationLog.objects.create(
-                    cycle=cycle,
-                    threshold_pct=80,
-                    type='WARNING_80'
+                    cycle=cycle, threshold_pct=80, type='WARNING_80'
                 )
                 notification.mark_as_sent()
 
-        return render(request, "history.html", {
-            "transactions": transactions,
-            "categories": categories,
-            "total_spent": 0,
-            "categories_json": json.dumps(list(categories.values('name'))),
-            "spent_pct": spent_pct,
-            "notification": notification,
+        return render(request, 'notifications.html', {
+            'spent_pct': spent_pct,
+            'notification': notification,
         })
