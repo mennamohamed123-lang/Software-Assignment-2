@@ -1,18 +1,19 @@
 from django.db import models
 from .managers import CycleManager, TransactionManager, DailyRecordManager
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 
-
+# القائمة المحدثة باللغة الإنجليزية للأيقونات
 CATEGORY_ICONS = {
-    "أكل":        "🍔",
-    "مواصلات":    "🚗",
-    "تسوق":       "🛍️",
-    "فواتير":     "💡",
-    "صحة":        "💊",
-    "ترفيه":      "🎬",
-    "تعليم":      "📚",
-    "أخرى":       "📦",
+    "Food":        "🍔",
+    "Transport":   "🚗",
+    "Shopping":    "🛍️",
+    "Bills":       "💡",
+    "Health":      "💊",
+    "Entertainment":"🎬",
+    "Education":   "📚",
+    "Others":      "📦",
 }
-
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -21,9 +22,9 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-    # ✅ FIX: template كانت بتطلب icon_emoji لكن الـ model مكانش فيه غير icon_res_id
     @property
     def icon_emoji(self):
+        # بيبحث في القائمة ولو ملقاش الاسم بيحط أيقونة الصندوق كافتراضي
         return CATEGORY_ICONS.get(self.name, "📦")
 
     def get_spending_percentage(self, cat_total, grand_total):
@@ -71,7 +72,6 @@ class Transaction(models.Model):
 
     amount    = models.FloatField()
     category  = models.ForeignKey(Category, on_delete=models.CASCADE)
-    # ✅ FIX: كان auto_now_add=True فكان بيتجاهل أي timestamp بنبعته من الـ DAO
     timestamp = models.DateTimeField()
     cycle     = models.ForeignKey(BudgetCycle, on_delete=models.CASCADE)
 
@@ -91,10 +91,10 @@ class Transaction(models.Model):
 class DailyRecord(models.Model):
     objects = DailyRecordManager()
 
-    date           = models.DateField()
+    date            = models.DateField()
     allocated_limit = models.FloatField()
-    total_spent    = models.FloatField(default=0)
-    cycle          = models.ForeignKey(BudgetCycle, on_delete=models.CASCADE)
+    total_spent     = models.FloatField(default=0)
+    cycle           = models.ForeignKey(BudgetCycle, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"Record {self.date}"
@@ -107,6 +107,29 @@ class DailyRecord(models.Model):
 
     def is_overspent(self):
         return self.total_spent > self.allocated_limit
+
+
+# --- Signals لتصحيح الحسابات عند المسح ---
+
+@receiver(post_delete, sender=Transaction)
+def update_stats_on_delete(sender, instance, **kwargs):
+    # 1. إرجاع المبلغ للميزانية الكلية
+    cycle = instance.cycle
+    cycle.remaining_balance += instance.amount
+    cycle.save()
+
+    # 2. خصم المبلغ من صرف اليوم (Spent Today)
+    daily_record = DailyRecord.objects.filter(
+        cycle=cycle, 
+        date=instance.timestamp.date()
+    ).first()
+
+    if daily_record:
+        daily_record.total_spent -= instance.amount
+        # لضمان عدم وجود أرقام سالبة في حالة المسح المتكرر
+        if daily_record.total_spent < 0:
+            daily_record.total_spent = 0
+        daily_record.save()
 
 
 class AlertType(models.TextChoices):
