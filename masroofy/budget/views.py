@@ -2,7 +2,7 @@ import json
 from django.shortcuts import render
 from django.utils import timezone
 from django.views import View
-from django.db.models import Sum
+from django.db.models import Sum, Q
 
 from .dao import CategoryDAO, TransactionDAO
 from .expense_view import ExpenseView
@@ -15,12 +15,51 @@ from .models import (
     NotificationLog
 )
 
+from django.views.decorators.csrf import csrf_exempt
+
+
+# =========================
+# DAILY ALERT HELPER
+# =========================
+def get_daily_alert(daily_record):
+    if not daily_record:
+        return None
+
+    spent = daily_record.total_spent
+    limit = daily_record.allocated_limit
+    remaining = limit - spent
+
+    percentage = (spent / limit) * 100 if limit > 0 else 0
+
+    if spent >= limit:
+        return {
+            "msg": f"🚨 تجاوزت الحد اليومي ({limit} ج.م)",
+            "type": "danger",
+            "percentage": round(percentage, 0)
+        }
+
+    elif spent >= (limit * 0.8):
+        return {
+            "msg": f"⚠️ استخدمتي {percentage:.0f}%، فاضل {remaining:.2f} ج.م",
+            "type": "warning",
+            "percentage": round(percentage, 0)
+        }
+
+    elif spent >= (limit * 0.6):
+        return {
+            "msg": f"ℹ️ استهلاك عالي شوية ({percentage:.0f}%)، المتبقي {remaining:.2f} ج.م",
+            "type": "info",
+            "percentage": round(percentage, 0)
+        }
+
+    return None
+
 
 # =========================
 # RECORD EXPENSE
 # =========================
+@csrf_exempt
 def record_expense(request):
-
     cat_dao = CategoryDAO()
     tx_dao  = TransactionDAO()
 
@@ -39,6 +78,7 @@ def record_expense(request):
         "today_transactions": tx_dao.get_by_date(today) if cycle else [],
         "result_message": None,
         "result_status": None,
+        "daily_alert": None,
         "form": {
             "amount": {"value": "", "errors": []},
             "category_id": {"value": "", "errors": []},
@@ -46,7 +86,6 @@ def record_expense(request):
     }
 
     if request.method == "POST":
-
         if cycle:
             RolloverView().rollover_all_pending(cycle.id)
 
@@ -54,11 +93,10 @@ def record_expense(request):
         raw_category_id = request.POST.get("category_id", "").strip()
         raw_cycle_id    = request.POST.get("cycle_id", "").strip()
 
-        context["form"]["amount"]["value"] = raw_amount
+        context["form"]["amount"]["value"]      = raw_amount
         context["form"]["category_id"]["value"] = raw_category_id
 
         errors = []
-
         try:
             amount = float(raw_amount)
             if amount <= 0:
@@ -84,34 +122,32 @@ def record_expense(request):
         )
 
         context["result_message"] = result["message"]
-        context["result_status"] = result["status"]
+        context["result_status"]  = result["status"]
 
-        cycle = BudgetCycle.objects.filter(is_active=True).first()
+        # تحديث + تنبيه
+        current_daily = DailyRecord.objects.filter(cycle=cycle, date=today).first()
+        context["daily_alert"] = get_daily_alert(current_daily)
 
-        context["cycle"] = cycle
-        context["daily_record"] = DailyRecord.objects.filter(
-            cycle=cycle,
-            date=today
-        ).first()
-
+        context["cycle"] = BudgetCycle.objects.filter(is_active=True).first()
+        context["daily_record"] = current_daily
         context["today_transactions"] = tx_dao.get_by_date(today)
+
+        context["form"]["amount"]["value"] = ""
+        context["form"]["category_id"]["value"] = ""
+
+    else:
+        context["daily_alert"] = get_daily_alert(daily_record)
 
     return render(request, "budget/expense_entry.html", context)
 
 
 # =========================
-# HISTORY VIEW (MAIN FIXED)
+# HISTORY VIEW
 # =========================
-from django.db.models import Sum
-
 class HistoryView(View):
-
     def get(self, request):
-
         transactions = Transaction.objects.select_related("category").order_by('-timestamp')
-        categories = Category.objects.all()
 
-        # filters
         category_id = request.GET.get('category')
         if category_id:
             transactions = transactions.filter(category_id=category_id)
@@ -120,80 +156,60 @@ class HistoryView(View):
         if date_filter:
             transactions = transactions.filter(timestamp__date=date_filter)
 
-        total_spent = transactions.aggregate(total=Sum('amount'))['total'] or 0
+        # ✅ أداء أفضل
+        total_spent = transactions.aggregate(
+            total=Sum('amount')
+        )['total'] or 0
 
-        # 🔥 المهم هنا
-        categories_with_totals = categories.annotate(
-            total_spent=Sum('transaction__amount')
+        # ✅ categories حسب الفلتر
+        categories = Category.objects.annotate(
+            total_spent=Sum(
+                'transaction__amount',
+                filter=Q(transaction__in=transactions)
+            )
         )
 
+        cycle = BudgetCycle.objects.filter(is_active=True).first()
+        today = timezone.now().date()
+        daily_record = DailyRecord.objects.filter(cycle=cycle, date=today).first()
+
         context = {
-            "transactions": transactions,
-            "categories": categories_with_totals,  # 👈 بدل القديمة
-            "total_spent": total_spent,
+            'transactions': transactions,
+            'categories': categories,
+            'total_spent': total_spent,
+            'daily_alert': get_daily_alert(daily_record),
         }
 
-        return render(request, "history.html", context)
+        return render(request, 'history.html', context)
+
 
 # =========================
-# NOTIFICATION VIEW (SAFE)
+# NOTIFICATION VIEW
 # =========================
 class NotificationView(View):
-
     def get(self, request):
-
         cycle = BudgetCycle.objects.filter(is_active=True).first()
 
-        transactions = Transaction.objects.select_related("category")
-        categories = Category.objects.all()
-
         if not cycle:
-            return render(request, "history.html", {
-                "transactions": transactions,
-                "categories": categories,
-                "total_spent": 0,
-                "categories_json": json.dumps(list(categories.values('name'))),
-                "message": "مفيش cycle نشط"
+            return render(request, 'notifications.html', {
+                'message': 'No active cycle found'
             })
 
-        spent_pct = cycle.get_spent_percentage()
-        notification = None
+        total_spent_amt = Transaction.objects.filter(cycle=cycle).aggregate(
+            Sum('amount')
+        )['amount__sum'] or 0
+
+        spent_pct = (total_spent_amt / cycle.total_allowance) * 100 if cycle.total_allowance > 0 else 0
 
         if spent_pct >= 100:
-            already = NotificationLog.objects.filter(
-                cycle=cycle,
-                threshold_pct=100,
-                is_triggered=True
-            ).exists()
-
-            if not already:
-                notification = NotificationLog.objects.create(
-                    cycle=cycle,
-                    threshold_pct=100,
-                    type='EXHAUSTED_100'
-                )
-                notification.mark_as_sent()
-
+            notification_level = "danger"
         elif spent_pct >= 80:
-            already = NotificationLog.objects.filter(
-                cycle=cycle,
-                threshold_pct=80,
-                is_triggered=True
-            ).exists()
+            notification_level = "warning"
+        else:
+            notification_level = "success"
 
-            if not already:
-                notification = NotificationLog.objects.create(
-                    cycle=cycle,
-                    threshold_pct=80,
-                    type='WARNING_80'
-                )
-                notification.mark_as_sent()
-
-        return render(request, "history.html", {
-            "transactions": transactions,
-            "categories": categories,
-            "total_spent": 0,
-            "categories_json": json.dumps(list(categories.values('name'))),
-            "spent_pct": spent_pct,
-            "notification": notification,
+        return render(request, 'notifications.html', {
+            'spent_pct': float(spent_pct),
+            'notification_level': notification_level,
+            'total_spent': total_spent_amt
         })

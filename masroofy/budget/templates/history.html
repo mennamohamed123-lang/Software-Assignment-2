@@ -4,128 +4,193 @@
 
 {% block active_history %}active{% endblock %}
 
+{% block extra_css %}
+<style>
+    .stat-card { border-left: 4px solid #1D5D74; }
+    .table thead { background-color: #1D5D74; color: white; }
+    .badge-category { background-color: #e8f4f8; color: #1D5D74; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; }
+
+    .chart-wrapper {
+        height: 250px;
+        position: relative;
+    }
+
+    #spendingChart {
+        width: 100% !important;
+        height: 100% !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-    <h4 class="mb-4 text-muted"><i class="bi bi-clock-history"></i> Expense History</h4>
+<h4 class="mb-4 text-muted"><i class="bi bi-clock-history"></i> Expense History</h4>
 
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card stat-card p-3" style="border-left: 4px solid #1D5D74;">
-                <div class="text-muted small">Total Transactions</div>
-                <div class="fs-3 fw-bold text-dark">{{ transactions|length }}</div>
-            </div>
+<!-- ✅ Daily Alert -->
+{% if daily_alert %}
+<div class="alert alert-{{ daily_alert.type }} alert-dismissible fade show shadow-sm border-0 mb-4" role="alert"
+     style="
+        background-color:
+        {% if daily_alert.type == 'danger' %}#f8d7da
+        {% elif daily_alert.type == 'warning' %}#fff3cd
+        {% else %}#d1ecf1
+        {% endif %};
+        
+        border-left: 5px solid
+        {% if daily_alert.type == 'danger' %}#dc3545
+        {% elif daily_alert.type == 'warning' %}#ffc107
+        {% else %}#17a2b8
+        {% endif %} !important;
+     ">
+    
+    <div class="d-flex align-items-center">
+        <span class="fs-4 me-3">
+            {% if daily_alert.type == 'danger' %}🚨
+            {% elif daily_alert.type == 'warning' %}⚠️
+            {% else %}ℹ️
+            {% endif %}
+        </span>
+
+        <div>
+            <h6 class="mb-0 fw-bold text-dark">{{ daily_alert.msg }}</h6>
+            <small class="text-muted">Daily Budget Alert System</small>
         </div>
-        <div class="col-md-4">
-            <div class="card stat-card p-3" style="border-left: 4px solid #D66D55;">
-                <div class="text-muted small">Total Spent</div>
-                <div class="fs-3 fw-bold text-danger">
-                    {% if transactions %}
-                        {# ملاحظة: هنا يفضل حساب الإجمالي في الـ View ولكن ده الكود الأصلي بتاعك #}
-                        {{ total_spent }} EGP 
-                    {% else %}
-                        0 EGP
-                    {% endif %}
-                </div>
-            </div>
+    </div>
+
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card p-3">
+            <div class="text-muted small">Total Transactions</div>
+            <div class="fs-3 fw-bold text-dark">{{ transactions|length }}</div>
         </div>
-        <div class="col-md-4">
-            <div class="card stat-card p-3" style="border-left: 4px solid #28a745;">
-                <div class="text-muted small">Categories Used</div>
-                <div class="fs-3 fw-bold text-success">{{ categories|length }}</div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card stat-card p-3" style="border-left-color: #D66D55;">
+            <div class="text-muted small">Total Spent</div>
+            <div class="fs-3 fw-bold text-danger">
+                {{ total_spent|floatformat:2 }} EGP
             </div>
         </div>
     </div>
 
-    <div class="row mb-4">
-        <div class="col-md-5">
-            <div class="card p-3">
-                <h6 class="text-muted mb-3"><i class="bi bi-pie-chart"></i> Spending by Category</h6>
-                <canvas id="spendingChart" height="220"></canvas>
-                <div id="noDataMsg" style="display:none;" class="text-center text-muted py-4">
-                    <i class="bi bi-pie-chart fs-3 d-block mb-2"></i>
-                    No spending data yet
-                </div>
-            </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3" style="border-left-color: #28a745;">
+            <div class="text-muted small">Categories Used</div>
+            <div class="fs-3 fw-bold text-success">{{ categories|length }}</div>
         </div>
+    </div>
+</div>
 
-        <div class="col-md-7">
-            <div class="card p-3">
-                <h6 class="text-muted mb-3"><i class="bi bi-funnel"></i> Filter Transactions</h6>
-                <form method="GET">
-                    <div class="mb-3">
-                        <label class="form-label">Category</label>
-                        <select name="category" class="form-select">
-                            <option value="">All Categories</option>
-                            {% for cat in categories %}
-                                <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ cat.name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Date</label>
-                        <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-search"></i> Filter
-                        </button>
-                        <a href="/history/" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-circle"></i> Clear
-                        </a>
-                    </div>
-                </form>
+<div class="row mb-4">
+    <div class="col-md-5">
+        <div class="card p-3 h-100">
+            <h6 class="text-muted mb-3"><i class="bi bi-pie-chart"></i> Spending by Category</h6>
+
+            <div class="chart-wrapper">
+                <canvas id="spendingChart"></canvas>
+            </div>
+
+            <div id="noDataMsg" style="display:none;" class="text-center text-muted py-4">
+                <i class="bi bi-pie-chart fs-3 d-block mb-2"></i>
+                No spending data yet
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <h6 class="text-muted mb-3">
-                <i class="bi bi-list-ul"></i> Transactions
-                <span class="badge bg-secondary ms-2">{{ transactions|length }}</span>
-            </h6>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Amount</th>
-                            <th>Category</th>
-                            <th>Date & Time</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for t in transactions %}
-                        <tr>
-                            <td class="text-muted">{{ forloop.counter }}</td>
-                            <td class="fw-bold text-danger">{{ t.amount }} EGP</td>
-                            <td><span class="badge-category" style="background-color: #e8f4f8; color: #1D5D74; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem;">{{ t.category.name }}</span></td>
-                            <td class="text-muted">{{ t.timestamp|date:"M d, Y — H:i" }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center text-muted py-4">
-                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                                No transactions found
-                            </td>
-                        </tr>
+    <div class="col-md-7">
+        <div class="card p-3 h-100">
+            <h6 class="text-muted mb-3"><i class="bi bi-funnel"></i> Filter Transactions</h6>
+
+            <form method="GET">
+                <div class="mb-3">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
+                                {{ cat.name }}
+                            </option>
                         {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                    <a href="/history/" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h6 class="text-muted mb-3">
+            <i class="bi bi-list-ul"></i> Transactions
+            <span class="badge bg-secondary ms-2">{{ transactions|length }}</span>
+        </h6>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Amount</th>
+                        <th>Category</th>
+                        <th>Date & Time</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td class="text-muted">{{ forloop.counter }}</td>
+                        <td class="fw-bold text-danger">{{ t.amount|floatformat:2 }} EGP</td>
+                        <td><span class="badge-category">{{ t.category.name }}</span></td>
+                        <td class="text-muted">{{ t.timestamp|date:"M d, Y — H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                            No transactions found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    const ctx = document.getElementById('spendingChart').getContext('2d');
-    const labels = [{% for cat in categories %}"{{ cat.name }}"{% if not forloop.last %},{% endif %}{% endfor %}];
-    const hasData = {{ transactions|length }} > 0;
+document.addEventListener('DOMContentLoaded', function () {
 
-    if (!hasData) {
-        document.getElementById('spendingChart').style.display = 'none';
+    const ctx = document.getElementById('spendingChart').getContext('2d');
+
+    const labels = [{% for cat in categories %}"{{ cat.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+    const dataValues = [{% for cat in categories %}{{ cat.total_spent|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+    const totalAmount = dataValues.reduce((a, b) => a + (b || 0), 0);
+
+    if (totalAmount === 0) {
+        document.querySelector('.chart-wrapper').style.display = 'none';
         document.getElementById('noDataMsg').style.display = 'block';
     } else {
         new Chart(ctx, {
@@ -133,16 +198,21 @@
             data: {
                 labels: labels,
                 datasets: [{
-                    data: [{% for cat in categories %}{{ cat.total_spent|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                    data: dataValues,
                     backgroundColor: ['#1D5D74','#D66D55','#88b4c3','#6c7e87','#f0a500','#28a745'],
                     borderWidth: 2
                 }]
             },
             options: {
-                plugins: { legend: { position: 'bottom' } },
-                cutout: '65%'
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                cutout: '70%'
             }
         });
     }
+});
 </script>
 {% endblock %}
