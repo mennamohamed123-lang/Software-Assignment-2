@@ -8,16 +8,12 @@
 <style>
     .stat-card { border-left: 4px solid #1D5D74; }
     .table thead { background-color: #1D5D74; color: white; }
-    .badge-category { background-color: #e8f4f8; color: #1D5D74; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; }
-
-    .chart-wrapper {
-        height: 250px;
-        position: relative;
-    }
-
-    #spendingChart {
-        width: 100% !important;
-        height: 100% !important;
+    .badge-category {
+        background-color: #e8f4f8;
+        color: #1D5D74;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
     }
 </style>
 {% endblock %}
@@ -60,6 +56,7 @@
 </div>
 {% endif %}
 
+<!-- ✅ Stats Cards -->
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="card stat-card p-3">
@@ -85,57 +82,48 @@
     </div>
 </div>
 
+<!-- ✅ Filter Section (بقى Full Width) -->
 <div class="row mb-4">
-    <div class="col-md-5">
-        <div class="card p-3 h-100">
-            <h6 class="text-muted mb-3"><i class="bi bi-pie-chart"></i> Spending by Category</h6>
-
-            <div class="chart-wrapper">
-                <canvas id="spendingChart"></canvas>
-            </div>
-
-            <div id="noDataMsg" style="display:none;" class="text-center text-muted py-4">
-                <i class="bi bi-pie-chart fs-3 d-block mb-2"></i>
-                No spending data yet
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-7">
-        <div class="card p-3 h-100">
+    <div class="col-md-12">
+        <div class="card p-3">
             <h6 class="text-muted mb-3"><i class="bi bi-funnel"></i> Filter Transactions</h6>
 
             <form method="GET">
-                <div class="mb-3">
-                    <label class="form-label">Category</label>
-                    <select name="category" class="form-select">
-                        <option value="">All Categories</option>
-                        {% for cat in categories %}
-                            <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
-                                {{ cat.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
+                <div class="row">
+                    <div class="col-md-5 mb-3">
+                        <label class="form-label">Category</label>
+                        <select name="category" class="form-select">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ cat.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Date</label>
-                    <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
-                </div>
+                    <div class="col-md-5 mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
+                    </div>
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-search"></i> Filter
-                    </button>
-                    <a href="/history/" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-circle"></i> Clear
-                    </a>
+                    <div class="col-md-2 d-flex align-items-end mb-3">
+                        <div class="d-flex gap-2 w-100">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search"></i>
+                            </button>
+                            <a href="/history/" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-x-circle"></i>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+<!-- ✅ Transactions Table -->
 <div class="card">
     <div class="card-body">
         <h6 class="text-muted mb-3">
@@ -176,43 +164,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-
-    const ctx = document.getElementById('spendingChart').getContext('2d');
-
-    const labels = [{% for cat in categories %}"{{ cat.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
-    const dataValues = [{% for cat in categories %}{{ cat.total_spent|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}];
-
-    const totalAmount = dataValues.reduce((a, b) => a + (b || 0), 0);
-
-    if (totalAmount === 0) {
-        document.querySelector('.chart-wrapper').style.display = 'none';
-        document.getElementById('noDataMsg').style.display = 'block';
-    } else {
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: dataValues,
-                    backgroundColor: ['#1D5D74','#D66D55','#88b4c3','#6c7e87','#f0a500','#28a745'],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' }
-                },
-                cutout: '70%'
-            }
-        });
-    }
-});
-</script>
 {% endblock %}

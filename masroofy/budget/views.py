@@ -213,3 +213,88 @@ class NotificationView(View):
             'notification_level': notification_level,
             'total_spent': total_spent_amt
         })
+    
+# =========================
+# DashboardView
+# =========================
+
+class DashboardView(View):
+    def get(self, request):
+        cycle = BudgetCycle.objects.filter(is_active=True).first()
+
+        if not cycle:
+            return render(request, 'dashboard.html', {
+                'error': "No active cycle"
+            })
+
+        transactions = Transaction.objects.filter(cycle=cycle)
+
+        # ===== KPIs =====
+        spent = transactions.aggregate(Sum('amount'))['amount__sum'] or 0
+        total = cycle.total_allowance
+        remaining = total - spent
+
+        days = (cycle.end_date - cycle.start_date).days + 1
+        daily_limit = total / days if days > 0 else 0
+
+        # ===== SMALL PIE (Top 3 فقط) =====
+        category_data = (
+            transactions
+            .values('category__name')
+            .annotate(total=Sum('amount'))
+            .order_by('-total')[:3]
+        )
+
+        pie_labels = [d['category__name'] for d in category_data]
+        pie_values = [float(d['total']) for d in category_data]
+
+        # ===== LATEST ACTIVITY =====
+        latest = transactions.order_by('-timestamp')[:5]
+
+        return render(request, 'dashboard.html', {
+            'total': total,
+            'spent': spent,
+            'remaining': remaining,
+            'daily_limit': daily_limit,
+            'pie_labels': pie_labels,
+            'pie_values': pie_values,
+            'latest': latest
+        })
+class StatsView(View):
+    def get(self, request):
+        cycle = BudgetCycle.objects.filter(is_active=True).first()
+
+        if not cycle:
+            return render(request, 'stats.html', {
+                'error': "No active cycle."
+            })
+
+        transactions = Transaction.objects.filter(cycle=cycle)
+
+        # ================= PIE =================
+        category_data = (
+            transactions
+            .values('category__name')
+            .annotate(total=Sum('amount'))
+        )
+
+        labels = [d['category__name'] for d in category_data]
+        values = [float(d['total']) for d in category_data]
+
+        # ================= LINE =================
+        daily_data = (
+            transactions
+            .values('timestamp__date')
+            .annotate(total=Sum('amount'))
+            .order_by('timestamp__date')
+        )
+
+        line_labels = [str(d['timestamp__date']) for d in daily_data]
+        line_values = [float(d['total']) for d in daily_data]
+
+        return render(request, 'stats.html', {
+            'labels': labels,
+            'values': values,
+            'line_labels': line_labels,
+            'line_values': line_values,
+        })
