@@ -217,38 +217,31 @@ class NotificationView(View):
 # =========================
 # DashboardView
 # =========================
-
 class DashboardView(View):
     def get(self, request):
         cycle = BudgetCycle.objects.filter(is_active=True).first()
 
         if not cycle:
-            return render(request, 'dashboard.html', {
-                'error': "No active cycle"
-            })
+            return render(request, 'dashboard.html', {'error': "No active cycle"})
 
         transactions = Transaction.objects.filter(cycle=cycle)
 
-        # ===== KPIs =====
         spent = transactions.aggregate(Sum('amount'))['amount__sum'] or 0
-        total = cycle.total_allowance
+        total = cycle.total_allowance or 0
         remaining = total - spent
 
         days = (cycle.end_date - cycle.start_date).days + 1
         daily_limit = total / days if days > 0 else 0
 
-        # ===== SMALL PIE (Top 3 فقط) =====
-        category_data = (
-            transactions
-            .values('category__name')
-            .annotate(total=Sum('amount'))
-            .order_by('-total')[:3]
-        )
+        today = timezone.now().date()
+        is_final_day = (cycle.end_date == today)
 
-        pie_labels = [d['category__name'] for d in category_data]
-        pie_values = [float(d['total']) for d in category_data]
+        spent_percentage = (spent / total * 100) if total > 0 else 0
+        show_80_alert = spent_percentage >= 80
 
-        # ===== LATEST ACTIVITY =====
+        # مقارنة بسيطة وآمنة بدل التعقيد
+        budget_is_tight = remaining < (total * 0.2)
+
         latest = transactions.order_by('-timestamp')[:5]
 
         return render(request, 'dashboard.html', {
@@ -256,22 +249,26 @@ class DashboardView(View):
             'spent': spent,
             'remaining': remaining,
             'daily_limit': daily_limit,
-            'pie_labels': pie_labels,
-            'pie_values': pie_values,
-            'latest': latest
+            'latest': latest,
+
+            'is_final_day': is_final_day,
+            'spent_percentage': round(spent_percentage, 1),
+            'show_80_alert': show_80_alert,
+            'budget_is_tight': budget_is_tight,
         })
+
+
 class StatsView(View):
     def get(self, request):
         cycle = BudgetCycle.objects.filter(is_active=True).first()
 
         if not cycle:
-            return render(request, 'stats.html', {
-                'error': "No active cycle."
-            })
+            return render(request, 'stats.html', {'error': "No active cycle"})
 
         transactions = Transaction.objects.filter(cycle=cycle)
 
-        # ================= PIE =================
+        total_spent = transactions.aggregate(Sum('amount'))['amount__sum'] or 0
+
         category_data = (
             transactions
             .values('category__name')
@@ -281,7 +278,6 @@ class StatsView(View):
         labels = [d['category__name'] for d in category_data]
         values = [float(d['total']) for d in category_data]
 
-        # ================= LINE =================
         daily_data = (
             transactions
             .values('timestamp__date')
@@ -297,4 +293,5 @@ class StatsView(View):
             'values': values,
             'line_labels': line_labels,
             'line_values': line_values,
+            'total_spent': float(total_spent),
         })

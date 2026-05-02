@@ -8,7 +8,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
 
     <style>
         body { background-color: #f8f9fa; }
@@ -18,15 +17,18 @@
             min-height: 100vh;
             padding: 20px 0;
             position: fixed;
+            width: 16.666%;
         }
 
         .sidebar a {
             color: #ffffffcc;
             text-decoration: none;
-            display: block;
+            display: flex;
+            align-items: center;
             padding: 12px 20px;
-            border-radius: 8px;
-            margin: 4px 10px;
+            border-radius: 12px;
+            margin: 6px 10px;
+            transition: 0.2s ease;
         }
 
         .sidebar a:hover {
@@ -34,9 +36,11 @@
             color: white;
         }
 
-        .sidebar a.active {
-            background-color: #D66D55;
-            color: white;
+        /* ✅ ACTIVE LINK (المهم) */
+        .active-link {
+            background-color: #d35d47;
+            color: white !important;
+            border-radius: 12px;
         }
 
         .sidebar .brand {
@@ -81,26 +85,25 @@
                 <i class="bi bi-wallet2"></i> Masroofy
             </div>
 
-            <a href="/history/" class="{% block active_history %}{% endblock %}">
+            <a href="/history/" class="{% if request.path == '/history/' %}active-link{% endif %}">
                 <i class="bi bi-clock-history me-2"></i> History
             </a>
 
-            <a href="/record/" class="{% block active_record %}{% endblock %}">
+            <a href="/record/" class="{% if request.path == '/record/' %}active-link{% endif %}">
                 <i class="bi bi-plus-circle me-2"></i> New Expense
             </a>
 
-            <a href="/dashboard/" class="{% block active_dashboard %}{% endblock %}">
+            <a href="/dashboard/" class="{% if request.path == '/dashboard/' %}active-link{% endif %}">
                 <i class="bi bi-speedometer2 me-2"></i> Dashboard
             </a>
 
-            <a href="/stats/" class="{% block active_stats %}{% endblock %}">
+            <a href="/stats/" class="{% if request.path == '/stats/' %}active-link{% endif %}">
                 <i class="bi bi-bar-chart me-2"></i> Stats
             </a>
 
-            <a href="/notifications/check/" class="{% block active_notifications %}{% endblock %}">
+            <a href="/notifications/check/" class="{% if request.path == '/notifications/check/' %}active-link{% endif %}">
                 <i class="bi bi-bell me-2"></i> Notifications
             </a>
-            
 
         </div>
 
@@ -110,7 +113,6 @@
         </div>
 
     </div>
-    
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

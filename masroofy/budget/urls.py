@@ -6,5 +6,6 @@ urlpatterns = [
     path('notifications/check/', views.NotificationView.as_view(), name='notifications'),
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('stats/', views.StatsView.as_view(), name='stats'),
+    path('record/', views.record_expense, name='record_expense'),
 # شيلنا _view من الآخر عشان تبقى زي ما هي مكتوبة في الـ views
 path('record/', views.record_expense, name='record_expense'),]

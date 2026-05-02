@@ -1,17 +1,38 @@
 {% extends "base.html" %}
+{% block active_dashboard %}active-link{% endblock %}
 
 {% block content %}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
 <div class="container mt-3">
 
-    <h3 class="fw-bold mb-3"> Dashboard</h3>
+    <!-- 🔥 Header + Button -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+
+        <h3 class="fw-bold mb-0">
+             Dashboard
+            {% if is_final_day %}
+                <span class="badge bg-danger ms-2">🚨 Final Day</span>
+            {% endif %}
+        </h3>
+
+        <!-- ✅ زرار Log Expense -->
+        <a href="{% url 'record_expense' %}" class="btn btn-success rounded-pill px-4">
+            + Log Expense
+        </a>
+
+    </div>
+
+    <!-- 🔥 Alert -->
+    {% if show_80_alert %}
+    <div class="alert alert-danger">
+        Warning: You have used {{ spent_percentage }}% of your budget!
+    </div>
+    {% endif %}
 
     {% if error %}
         <div class="alert alert-danger">{{ error }}</div>
     {% else %}
 
-    <!-- KPIs -->
+    <!-- 🔥 KPI CARDS -->
     <div class="row g-3">
 
         <div class="col-md-3">
@@ -36,91 +57,45 @@
         </div>
 
         <div class="col-md-3">
-            <div class="card bg-dark text-white p-3">
-                <small>Daily</small>
+            <div class="card text-white p-3 {% if budget_is_tight %}bg-warning{% else %}bg-dark{% endif %}">
+                <small>Daily Limit</small>
                 <h5>{{ daily_limit|floatformat:2 }}</h5>
             </div>
         </div>
 
     </div>
 
-    <!-- GRAPH + ACTIVITY -->
-    <div class="row mt-4 g-3">
+    <!-- 🔥 Latest Activity -->
+    <div class="card mt-4 p-3">
+        <h6 class="text-muted">Latest Activity</h6>
 
-        <!-- MINI PIE -->
-        <div class="col-md-4">
-            <div class="card p-3 shadow-sm">
-                <small class="text-muted">Top Categories</small>
-                <canvas id="miniPie" style="max-height:200px;"></canvas>
-            </div>
-        </div>
-
-        <!-- LATEST ACTIVITY -->
-        <div class="col-md-8">
-            <div class="card p-3 shadow-sm">
-                <small class="text-muted">Latest Activity</small>
-
-                <table class="table table-sm mt-2">
-                    <thead>
-                        <tr>
-                            <th>Category</th>
-                            <th>Amount</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for t in latest %}
-                        <tr>
-                            <td>{{ t.category.name }}</td>
-                            <td>{{ t.amount }}</td>
-                            <td>{{ t.timestamp|date:"Y-m-d" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-
-            </div>
-        </div>
-
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in latest %}
+                <tr>
+                    <td>{{ t.category.name }}</td>
+                    <td>{{ t.amount }}</td>
+                    <td>{{ t.timestamp|date:"Y-m-d" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted">
+                        No activity yet
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
     {% endif %}
 
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-const labels = {{ pie_labels|safe }};
-const values = {{ pie_values|safe }};
-
-if (labels.length > 0) {
-   new Chart(document.getElementById('miniPie'), {
-    type: 'pie',
-    data: {
-        labels: labels,
-        datasets: [{
-            data: values,
-            backgroundColor: ['#1D5D74','#D66D55','#88b4c3']
-        }]
-    },
-    options: {
-        plugins: {
-            legend: { position: 'bottom' },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        let value = context.raw;
-                        let total = context.dataset.data.reduce((a, b) => a + b, 0);
-                        let percentage = ((value / total) * 100).toFixed(1);
-                        return context.label + ": " + value + " (" + percentage + "%)";
-                    }
-                }
-            }
-        }
-    }
-});
-}
-</script>
-
 {% endblock %}
