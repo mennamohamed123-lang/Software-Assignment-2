@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 
 {% block title %}Expense History - Masroofy{% endblock %}
-
 {% block active_history %}active{% endblock %}
 
 {% block extra_css %}
@@ -21,12 +20,12 @@
 {% block content %}
 <h4 class="mb-4 text-muted"><i class="bi bi-clock-history"></i> Expense History</h4>
 
-<!-- ✅ Alerts Section -->
+<!-- Alerts Section -->
 <div id="alerts-container">
-    
-    <!-- 1. تنبيه الميزانية الكلية (بتاع الـ Remaining Balance) -->
+
     {% if cycle_alert %}
-    <div class="alert alert-{{ cycle_alert.type }} alert-dismissible fade show shadow-sm border-0 mb-3" role="alert" 
+    <div class="alert alert-{{ cycle_alert.type }} alert-dismissible fade show shadow-sm border-0 mb-3"
+         role="alert"
          style="border-left: 5px solid {% if cycle_alert.type == 'danger' %}#dc3545{% else %}#ffc107{% endif %} !important;">
         <div class="d-flex align-items-center">
             <span class="fs-4 me-3">💰</span>
@@ -39,13 +38,15 @@
     </div>
     {% endif %}
 
-    <!-- 2. تنبيه الحد اليومي (بتاع الـ Daily Limit) -->
     {% if daily_alert %}
-    <div class="alert alert-{{ daily_alert.type }} alert-dismissible fade show shadow-sm border-0 mb-4" role="alert"
-         style="border-left: 5px solid {% if daily_alert.type == 'danger' %}#dc3545{% else %}#ffc107{% endif %} !important;">
+    <div class="alert alert-{{ daily_alert.type }} alert-dismissible fade show shadow-sm border-0 mb-4"
+         role="alert"
+         style="
+            border-left: 5px solid {% if daily_alert.type == 'danger' %}#dc3545{% elif daily_alert.type == 'warning' %}#ffc107{% else %}#17a2b8{% endif %} !important;
+         ">
         <div class="d-flex align-items-center">
             <span class="fs-4 me-3">
-                {% if daily_alert.type == 'danger' %}🚨{% else %}⚠️{% endif %}
+                {% if daily_alert.type == 'danger' %}🚨{% elif daily_alert.type == 'warning' %}⚠️{% else %}ℹ️{% endif %}
             </span>
             <div>
                 <h6 class="mb-0 fw-bold text-dark">{{ daily_alert.msg }}</h6>
@@ -55,66 +56,10 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     {% endif %}
+
 </div>
-{% extends 'base.html' %}
 
-{% block title %}Expense History - Masroofy{% endblock %}
-
-{% block active_history %}active{% endblock %}
-
-{% block extra_css %}
-<style>
-    .stat-card { border-left: 4px solid #1D5D74; }
-    .table thead { background-color: #1D5D74; color: white; }
-    .badge-category {
-        background-color: #e8f4f8;
-        color: #1D5D74;
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-<h4 class="mb-4 text-muted"><i class="bi bi-clock-history"></i> Expense History</h4>
-
-<!-- ✅ Daily Alert -->
-{% if daily_alert %}
-<div class="alert alert-{{ daily_alert.type }} alert-dismissible fade show shadow-sm border-0 mb-4" role="alert"
-     style="
-        background-color:
-        {% if daily_alert.type == 'danger' %}#f8d7da
-        {% elif daily_alert.type == 'warning' %}#fff3cd
-        {% else %}#d1ecf1
-        {% endif %};
-        
-        border-left: 5px solid
-        {% if daily_alert.type == 'danger' %}#dc3545
-        {% elif daily_alert.type == 'warning' %}#ffc107
-        {% else %}#17a2b8
-        {% endif %} !important;
-     ">
-    
-    <div class="d-flex align-items-center">
-        <span class="fs-4 me-3">
-            {% if daily_alert.type == 'danger' %}🚨
-            {% elif daily_alert.type == 'warning' %}⚠️
-            {% else %}ℹ️
-            {% endif %}
-        </span>
-
-        <div>
-            <h6 class="mb-0 fw-bold text-dark">{{ daily_alert.msg }}</h6>
-            <small class="text-muted">Daily Budget Alert System</small>
-        </div>
-    </div>
-
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-{% endif %}
-
-<!-- ✅ Stats Cards -->
+<!-- Stats Cards -->
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="card stat-card p-3">
@@ -126,34 +71,7 @@
     <div class="col-md-4">
         <div class="card stat-card p-3" style="border-left-color: #D66D55;">
             <div class="text-muted small">Total Spent</div>
-            <div class="fs-3 fw-bold text-danger">
-                {{ total_spent|floatformat:2 }} EGP
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card stat-card p-3" style="border-left-color: #28a745;">
-            <div class="text-muted small">Categories Used</div>
-            <div class="fs-3 fw-bold text-success">{{ categories|length }}</div>
-        </div>
-    </div>
-</div>
-<!-- ✅ Stats Cards -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card stat-card p-3">
-            <div class="text-muted small">Total Transactions</div>
-            <div class="fs-3 fw-bold text-dark">{{ transactions|length }}</div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card stat-card p-3" style="border-left-color: #D66D55;">
-            <div class="text-muted small">Total Spent</div>
-            <div class="fs-3 fw-bold text-danger">
-                {{ total_spent|floatformat:2 }} EGP
-            </div>
+            <div class="fs-3 fw-bold text-danger">{{ total_spent|floatformat:2 }} EGP</div>
         </div>
     </div>
 
@@ -165,40 +83,7 @@
     </div>
 </div>
 
-<!-- ✅ Filter Section -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card p-3">
-            <h6 class="text-muted mb-3"><i class="bi bi-funnel"></i> Filter Transactions</h6>
-            <form method="GET">
-                <div class="row">
-                    <div class="col-md-5 mb-3">
-                        <label class="form-label">Category</label>
-                        <select name="category" class="form-select">
-                            <option value="">All Categories</option>
-                            {% for cat in categories %}
-                                <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ cat.name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-5 mb-3">
-                        <label class="form-label">Date</label>
-                        <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end mb-3">
-                        <div class="d-flex gap-2 w-100">
-                            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
-                            <a href="/history/" class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle"></i></a>
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-<!-- ✅ Filter Section (بقى Full Width) -->
+<!-- Filter Section -->
 <div class="row mb-4">
     <div class="col-md-12">
         <div class="card p-3">
@@ -239,46 +124,7 @@
     </div>
 </div>
 
-<!-- ✅ Transactions Table -->
-<div class="card">
-    <div class="card-body">
-        <h6 class="text-muted mb-3">
-            <i class="bi bi-list-ul"></i> Transactions
-            <span class="badge bg-secondary ms-2">{{ transactions|length }}</span>
-        </h6>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Amount</th>
-                        <th>Category</th>
-                        <th>Date & Time</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in transactions %}
-                    <tr>
-                        <td class="text-muted">{{ forloop.counter }}</td>
-                        <td class="fw-bold text-danger">{{ t.amount|floatformat:2 }} EGP</td>
-                        <td><span class="badge-category">{{ t.category.name }}</span></td>
-                        <td class="text-muted">{{ t.timestamp|date:"M d, Y — H:i" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                            No transactions found
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-{% endblock %}
-<!-- ✅ Transactions Table -->
+<!-- Transactions Table -->
 <div class="card">
     <div class="card-body">
         <h6 class="text-muted mb-3">
@@ -314,9 +160,9 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-
             </table>
         </div>
     </div>
 </div>
+
 {% endblock %}

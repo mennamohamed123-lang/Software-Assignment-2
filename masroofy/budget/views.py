@@ -55,44 +55,6 @@ def delete_transaction(request, tx_id):
             daily_record.save()
             
     return redirect('record_expense')
-# =========================
-# DAILY ALERT HELPER
-# =========================
-def get_daily_alert(daily_record):
-    if not daily_record:
-        return None
-
-    spent = daily_record.total_spent
-    limit = daily_record.allocated_limit
-    remaining = limit - spent
-
-    percentage = (spent / limit) * 100 if limit > 0 else 0
-
-    if spent >= limit:
-        return {
-            "msg": f"🚨 تجاوزت الحد اليومي ({limit} ج.م)",
-            "type": "danger",
-            "percentage": round(percentage, 0)
-        }
-
-    elif spent >= (limit * 0.8):
-        return {
-            "msg": f"⚠️ استخدمتي {percentage:.0f}%، فاضل {remaining:.2f} ج.م",
-            "type": "warning",
-            "percentage": round(percentage, 0)
-        }
-
-    elif spent >= (limit * 0.6):
-        return {
-            "msg": f"ℹ️ استهلاك عالي شوية ({percentage:.0f}%)، المتبقي {remaining:.2f} ج.م",
-            "type": "info",
-            "percentage": round(percentage, 0)
-        }
-
-    return None
-
-from django.views.decorators.csrf import csrf_exempt
-
 
 # =========================
 # DAILY ALERT HELPER
@@ -236,6 +198,24 @@ def record_expense(request):
 
     return render(request, "budget/expense_entry.html", context)
 
+
+def get_notification_alert(cycle):
+    if not cycle:
+        return None
+
+    total_spent = Transaction.objects.filter(cycle=cycle).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+
+    total_budget = cycle.total_allowance  # ده الاسم اللي انتي مستخدماه في باقي الكود
+
+    if total_spent >= total_budget:
+        return "🚨 لقد تجاوزت الميزانية المحددة!"
+
+    elif total_spent >= total_budget * 0.8:
+        return "⚠️ اقتربت من الحد الأقصى للميزانية!"
+
+    return None
 
 # =========================
 # HISTORY VIEW
