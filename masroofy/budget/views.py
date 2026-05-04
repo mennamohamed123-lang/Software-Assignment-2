@@ -18,6 +18,8 @@ from .models import (
 from django.views.decorators.csrf import csrf_exempt
 
 
+def home(request):
+    return render(request, 'index.html')
 # =========================
 # DAILY ALERT HELPER
 # =========================
@@ -294,4 +296,7 @@ class StatsView(View):
             'line_labels': line_labels,
             'line_values': line_values,
             'total_spent': float(total_spent),
+
         })
+    
+

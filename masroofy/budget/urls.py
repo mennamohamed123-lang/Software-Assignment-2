@@ -8,4 +8,6 @@ urlpatterns = [
     path('stats/', views.StatsView.as_view(), name='stats'),
     path('record/', views.record_expense, name='record_expense'),
 # شيلنا _view من الآخر عشان تبقى زي ما هي مكتوبة في الـ views
-path('record/', views.record_expense, name='record_expense'),]
+    path('record/', views.record_expense, name='record_expense'),
+    path('', views.home, name='home'),
+    ]
