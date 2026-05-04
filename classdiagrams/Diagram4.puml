@@ -1,0 +1,104 @@
+@startuml Diagram4_History_MVT
+allow_mixing
+top to bottom direction
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 15
+skinparam packageBackgroundColor #1D5D74
+skinparam packageFontColor #FFFFFF
+skinparam classBorderColor #1D5D74
+skinparam classArrowColor #D66D55
+skinparam ArrowThickness 3
+skinparam ClassFontSize 20
+skinparam classBackgroundColor #FFFFFF
+ 
+skinparam classFontColor #1D5D74
+
+title Diagram 3 - History Management (US #8 & US #9)
+
+package "MODEL" #1D5D74 {
+
+  class DatabaseHelper <<Utility>> {
+    - DB_NAME : String
+    - DB_VERSION : int
+    --
+    + getConnection() : SQLiteDatabase
+  }
+
+  class TransactionDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + updateTransaction(t : Transaction) : void
+    + deleteTransaction(id : int) : void
+    + filterByCriteria(category : String, startDate : Date, endDate : Date) : List~Transaction~
+    + getAllTransactions() : List~Transaction~
+  }
+
+  class CycleDAO <<DAO>> {
+    - db : DatabaseHelper
+    --
+    + recalculateDailyLimit(cycleId : int) : void
+  }
+
+  class Transaction <<Entity>> {
+    - id : int
+    - amount : float
+    - categoryName : String
+    - timestamp : DateTime
+    - cycleId : int
+    --
+    + setAmount(newAmount : float) : void
+    + setCategory(newCat : String) : void
+  }
+  
+  TransactionDAO "1" --> "1" DatabaseHelper : "uses"
+  CycleDAO "1" --> "1" DatabaseHelper : "uses"
+  TransactionDAO "1" ..> "*" Transaction : "manages"
+}
+
+package "VIEW" #88b4c3 {
+
+  class HistoryView <<View>> {
+    - template : HistoryTemplate
+    - transactionDAO : TransactionDAO
+    - cycleDAO : CycleDAO
+    --
+    + loadHistory() : void
+    + onEditTransaction(transactionId : int) : void
+    + onDeleteTransaction(transactionId : int) : void
+    + onApplyFilter(category : String, dateRange : Range) : void
+    + validatePIN(pin : int) : boolean
+  }
+}
+
+package "TEMPLATE" #6c7e87 {
+
+  interface ITemplate <<interface>> {
+    + showError(msg : String) : void
+    + showLoading() : void
+  }
+
+  class HistoryTemplate <<Template>> {
+    - transactionList : RecyclerView
+    - filterIcon : ImageButton
+    - categoryDropdown : Spinner
+    - datePicker : View
+    - emptyStateLabel : TextView
+    --
+    + displayTransactions(list : List~Transaction~) : void
+    + showEditForm(t : Transaction) : void
+    + showDeleteConfirmation() : void
+    + showNoResultsMessage() : void
+    + notifyUpdateSuccess() : void
+  }
+
+  ITemplate <|.. HistoryTemplate : <<realizes>>
+}
+
+
+HistoryTemplate "1" ..> "1" HistoryView : "triggers interactions" [cite: 14, 46]
+HistoryView "1" --> "1" HistoryTemplate : "updates UI" [cite: 46, 51]
+HistoryView "1" --> "1" TransactionDAO : "CRUD & Filter operations" [cite: 14, 16, 46]
+HistoryView "1" --> "1" CycleDAO : "triggers limit recalculation" 
+
+@enduml

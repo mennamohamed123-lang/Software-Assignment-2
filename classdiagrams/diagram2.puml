@@ -11,7 +11,7 @@ skinparam classArrowColor #D66D55
 skinparam ArrowThickness 3
 skinparam ClassFontSize 20
 skinparam classBackgroundColor #FFFFFF
-skinparam BackgroundColor #F1E5E8
+ 
 skinparam classFontColor #1D5D74
 
 title Diagram 2 - Dashboard and Stats Component (MVT)
