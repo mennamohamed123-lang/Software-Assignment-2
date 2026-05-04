@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}New Expense | Masroofy{% endblock %}
+
+{% block active_record %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* تنسيقات الـ Category Chips الخاصة بصفحة الإضافة */
+    .cat-chip { position: relative; }
+    .cat-chip input[type="radio"] { position: absolute; opacity: 0; width: 0; }
+    .chip-inner {
+        cursor: pointer; background-color: #fff; border: 2px solid #dee2e6;
+        border-radius: 10px; padding: 14px 8px; text-align: center;
+        transition: all 0.2s; display: flex; flex-direction: column;
+        align-items: center; gap: 6px; min-height: 85px; justify-content: center;
+    }
+    .chip-inner:hover { border-color: #1D5D74; background-color: #f0f8fb; }
+    .cat-chip input:checked ~ .chip-inner {
+        border-color: #1D5D74; background-color: #e8f4f8;
+        box-shadow: 0 3px 10px rgba(29,93,116,0.15);
+    }
+
+    /* تنسيقات التنبيهات */
+    .alert-ok    { background:#e8f5e9; color:#1b5e20; border-radius:8px; padding:.75rem 1rem; border-left:4px solid #2e7d32; margin-bottom: 1rem; }
+    .alert-warn  { background:#fff3e0; color:#bf360c; border-radius:8px; padding:.75rem 1rem; border-left:4px solid #f57c00; margin-bottom: 1rem; }
+    .alert-error { background:#fce4ec; color:#880e4f; border-radius:8px; padding:.75rem 1rem; border-left:4px solid #c62828; margin-bottom: 1rem; }
+
+    .tx-row { display:flex; justify-content:space-between; align-items:center; padding:.5rem 0; border-bottom:1px solid #f0f0f0; }
+    .tx-row:last-child { border-bottom:none; }
+</style>
+{% endblock %}
+
+
+<!-- ✅ تنبيه الليميت اليومي (يظهر لو عديت 60% أو 80% أو 100%) -->
+{% if daily_alert %}
+    {% if daily_alert.type == 'danger' %}
+        <div class="alert-error"> <!-- استخدمنا alert-error عشان ده اللي متعرف في الـ CSS عندك -->
+    {% else %}
+        <div class="alert-warn">  <!-- استخدمنا alert-warn عشان ده اللي متعرف في الـ CSS عندك -->
+    {% endif %}
+        <div class="d-flex align-items-center">
+            <span class="fs-4 me-3">{% if daily_alert.type == 'danger' %}🚨{% else %}⚠️{% endif %}</span>
+            <div>
+                <h6 class="mb-0 fw-bold">{{ daily_alert.msg }}</h6>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+{% block content %}
+    <h4 class="mb-4 text-muted"><i class="bi bi-plus-circle"></i> New Expense</h4>
+
+    <!-- ✅ تنبيهات الحالة (تم الحفظ بنجاح أو خطأ) -->
+    {% if result_message %}
+    <div class="{% if result_status == 'ok' %}alert-ok{% elif result_status == 'error' %}alert-error{% else %}alert-warn{% endif %}">
+        <i class="bi {% if result_status == 'ok' %}bi-check-circle-fill{% else %}bi-exclamation-octagon-fill{% endif %} me-2"></i>
+        {{ result_message }}
+    </div>
+    {% endif %}
+
+    <!-- ✅ تنبيه الليميت اليومي (يظهر فوراً بعد الحفظ لو عديت الميزانية) -->
+    {% if daily_alert %}
+    <div class="alert-{% if daily_alert.type == 'danger' %}error{% else %}warn{% endif %}">
+        <div class="d-flex align-items-center">
+            <span class="fs-4 me-3">{% if daily_alert.type == 'danger' %}🚨{% else %}⚠️{% endif %}</span>
+            <div>
+                <h6 class="mb-0 fw-bold">{{ daily_alert.msg }}</h6>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if cycle %}
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card p-3" style="border-left: 4px solid #1D5D74;">
+                <div class="text-muted small">Remaining Balance</div>
+                <div class="fs-3 fw-bold" style="color:#1D5D74;">{{ cycle.remaining_balance|floatformat:2 }} EGP</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3" style="border-left: 4px solid #D66D55;">
+                <div class="text-muted small">Daily Limit</div>
+                <div class="fs-3 fw-bold text-dark">{{ cycle.safe_daily_limit|floatformat:2 }} EGP</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3" style="border-left: 4px solid #28a745;">
+                <div class="text-muted small">Spent Today</div>
+                <div class="fs-3 fw-bold text-danger">
+                    {% if daily_record %}{{ daily_record.total_spent|floatformat:2 }}{% else %}0.00{% endif %} EGP
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card p-4 mb-4">
+                <h6 class="text-muted mb-3"><i class="bi bi-pencil-square"></i> Record New Expense</h6>
+
+                {% if not cycle %}
+                <div class="alert-error">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    No active budget cycle — 
+                    <a href="/admin/budget/budgetcycle/add/" style="color:inherit;font-weight:600;">add one from Admin</a>.
+                </div>
+                {% else %}
+
+                <form method="post" action="/record/" autocomplete="off">
+                    {% csrf_token %}
+                    <input type="hidden" name="cycle_id" value="{{ cycle.id }}">
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted">Amount (EGP)</label>
+                        <input type="number" name="amount" step="0.01" min="0.01" 
+                               class="form-control form-control-lg" style="border-radius:8px;"
+                               placeholder="0.00" value="{{ form.amount.value|default:'' }}" 
+                               required autofocus>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted">Category</label>
+                        <div class="row g-2">
+                            {% for cat in categories %}
+                            <div class="col-4 col-sm-3">
+                                <label class="cat-chip w-100">
+                                    <input type="radio" name="category_id" value="{{ cat.id }}" 
+                                        {% if form.category_id.value == cat.id|stringformat:'s' %}checked{% endif %} required>
+                                    <div class="chip-inner">
+                                        <span style="font-size:1.6rem;">{{ cat.icon_emoji }}</span>
+                                        <span class="small fw-semibold">{{ cat.name }}</span>
+                                    </div>
+                                </label>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted small">No categories — add from Admin.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" style="border-radius:8px; background-color: #1D5D74; border: none;">
+                        <i class="bi bi-check-circle me-2"></i>Save Transaction
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card p-3">
+                <h6 class="text-muted mb-3">
+                    <i class="bi bi-list-ul"></i> Today's Transactions
+                    <span class="badge bg-secondary ms-2">{{ today_transactions|length }}</span>
+                </h6>
+              {% if today_transactions %}
+            {% for tx in today_transactions %}
+            <div class="tx-row">
+                <div class="d-flex align-items-center gap-2">
+                    <span style="font-size:1.2rem;">{{ tx.category.icon_emoji }}</span>
+                    <span class="small fw-semibold">{{ tx.category.name }}</span>
+                </div>
+                <!-- ✅ التعديل هنا: ضيفنا حاوية للفلوس وزرار المسح -->
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-end">
+                        <span class="fw-bold text-danger">{{ tx.amount|floatformat:2 }} EGP</span>
+                        <div class="text-muted" style="font-size:.75rem;">{{ tx.timestamp|time:"H:i" }}</div>
+                    </div>
+                    
+                    <!-- ✅ زرار المسح الجديد -->
+                    <a href="{% url 'delete_transaction' tx.id %}" 
+                       class="text-muted" 
+                       onclick="return confirm('Do you want to delete this transaction?');"
+                       title="Delete">
+                        <i class="bi bi-trash3 text-danger" style="font-size: 1.1rem; cursor: pointer;"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-inbox fs-3 d-block mb-2"></i>No transactions today
+            </div>
+        {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
