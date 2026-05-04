@@ -1,5 +1,5 @@
 import json
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views import View
 from django.db.models import Sum, Q
@@ -14,7 +14,6 @@ from .models import (
     DailyRecord,
     NotificationLog
 )
-
 from django.views.decorators.csrf import csrf_exempt
 
 
@@ -30,26 +29,49 @@ def get_daily_alert(daily_record):
     spent = daily_record.total_spent
     limit = daily_record.allocated_limit
     remaining = limit - spent
-
     percentage = (spent / limit) * 100 if limit > 0 else 0
 
     if spent >= limit:
-        return {
-            "msg": f"🚨 تجاوزت الحد اليومي ({limit} ج.م)",
-            "type": "danger",
-            "percentage": round(percentage, 0)
-        }
-
+        return {"msg": f"🚨 تجاوزت الحد اليومي ({limit} ج.م)", "type": "danger", "percentage": round(percentage, 0)}
     elif spent >= (limit * 0.8):
+        return {"msg": f"⚠️ استخدمتي {percentage:.0f}%، فاضل {remaining:.2f} ج.م", "type": "warning", "percentage": round(percentage, 0)}
+    elif spent >= (limit * 0.6):
+        return {"msg": f"ℹ️ استهلاك عالي شوية ({percentage:.0f}%)، المتبقي {remaining:.2f} ج.م", "type": "info", "percentage": round(percentage, 0)}
+
+    return None
+
+
+# =========================
+# CYCLE BUDGET ALERT HELPER
+# =========================
+def get_cycle_alert(cycle):
+    if not cycle:
+        return None
+
+    total = float(cycle.total_allowance) if cycle.total_allowance else 0
+    if total <= 0:
+        return None
+
+    spent = Transaction.objects.filter(cycle=cycle).aggregate(total=Sum('amount'))['total'] or 0
+    spent = float(spent)
+    remaining = total - spent
+    percentage = (spent / total) * 100
+
+    if percentage >= 100:
         return {
-            "msg": f"⚠️ استخدمتي {percentage:.0f}%، فاضل {remaining:.2f} ج.م",
+            "msg": f"🚨 انتهت ميزانيتك بالكامل! صرفت {spent:.2f} ج.م من {total:.2f} ج.م",
+            "type": "danger",
+            "percentage": 100
+        }
+    elif percentage >= 80:
+        return {
+            "msg": f"⚠️ تحذير: استخدمت {percentage:.0f}% من ميزانيتك، فاضل {remaining:.2f} ج.م فقط",
             "type": "warning",
             "percentage": round(percentage, 0)
         }
-
-    elif spent >= (limit * 0.6):
+    elif percentage >= 60:
         return {
-            "msg": f"ℹ️ استهلاك عالي شوية ({percentage:.0f}%)، المتبقي {remaining:.2f} ج.م",
+            "msg": f"ℹ️ استخدمت {percentage:.0f}% من ميزانيتك، فاضل {remaining:.2f} ج.م",
             "type": "info",
             "percentage": round(percentage, 0)
         }
@@ -58,20 +80,47 @@ def get_daily_alert(daily_record):
 
 
 # =========================
+# DELETE TRANSACTION
+# =========================
+@csrf_exempt
+def delete_transaction(request, tx_id):
+    transaction = get_object_or_404(Transaction, pk=tx_id)
+    cycle = BudgetCycle.objects.filter(is_active=True).first()
+    today = transaction.timestamp.date()
+
+    transaction.delete()
+
+    if cycle:
+        total_spent_now = Transaction.objects.filter(cycle=cycle).aggregate(total=Sum('amount'))['total'] or 0
+        cycle.remaining_balance = float(cycle.total_allowance) - float(total_spent_now)
+        cycle.save()
+
+        daily_record = DailyRecord.objects.filter(cycle=cycle, date=today).first()
+        if daily_record:
+            daily_spent = Transaction.objects.filter(timestamp__date=today).aggregate(total=Sum('amount'))['total'] or 0
+            daily_record.total_spent = daily_spent
+            daily_record.save()
+
+    return redirect('record_expense')
+
+
+# =========================
 # RECORD EXPENSE
 # =========================
 @csrf_exempt
 def record_expense(request):
     cat_dao = CategoryDAO()
-    tx_dao  = TransactionDAO()
+    tx_dao = TransactionDAO()
 
     cycle = BudgetCycle.objects.filter(is_active=True).first()
     today = timezone.now().date()
 
-    daily_record = (
-        DailyRecord.objects.filter(cycle=cycle, date=today).first()
-        if cycle else None
-    )
+    if cycle:
+        actual_spent = Transaction.objects.filter(cycle=cycle).aggregate(total=Sum('amount'))['total'] or 0
+        cycle.remaining_balance = float(cycle.total_allowance) - float(actual_spent)
+        cycle.save()
+
+    daily_record = DailyRecord.objects.filter(cycle=cycle, date=today).first() if cycle else None
 
     context = {
         "categories": cat_dao.get_all(),
@@ -80,7 +129,8 @@ def record_expense(request):
         "today_transactions": tx_dao.get_by_date(today) if cycle else [],
         "result_message": None,
         "result_status": None,
-        "daily_alert": None,
+        "daily_alert": get_daily_alert(daily_record),
+        "cycle_alert": get_cycle_alert(cycle),
         "form": {
             "amount": {"value": "", "errors": []},
             "category_id": {"value": "", "errors": []},
@@ -91,11 +141,11 @@ def record_expense(request):
         if cycle:
             RolloverView().rollover_all_pending(cycle.id)
 
-        raw_amount      = request.POST.get("amount", "").strip()
+        raw_amount = request.POST.get("amount", "").strip()
         raw_category_id = request.POST.get("category_id", "").strip()
-        raw_cycle_id    = request.POST.get("cycle_id", "").strip()
+        raw_cycle_id = request.POST.get("cycle_id", "").strip()
 
-        context["form"]["amount"]["value"]      = raw_amount
+        context["form"]["amount"]["value"] = raw_amount
         context["form"]["category_id"]["value"] = raw_category_id
 
         errors = []
@@ -109,7 +159,6 @@ def record_expense(request):
 
         if not raw_category_id:
             errors.append("اختر فئة")
-
         if not raw_cycle_id:
             errors.append("مفيش cycle محدد")
 
@@ -123,22 +172,20 @@ def record_expense(request):
             cycle_id=int(raw_cycle_id),
         )
 
-        context["result_message"] = result["message"]
-        context["result_status"]  = result["status"]
+        new_spent = Transaction.objects.filter(cycle=cycle).aggregate(total=Sum('amount'))['total'] or 0
+        cycle.remaining_balance = float(cycle.total_allowance) - float(new_spent)
+        cycle.save()
 
-        # تحديث + تنبيه
         current_daily = DailyRecord.objects.filter(cycle=cycle, date=today).first()
         context["daily_alert"] = get_daily_alert(current_daily)
-
+        context["cycle_alert"] = get_cycle_alert(cycle)
+        context["result_message"] = result["message"]
+        context["result_status"] = result["status"]
         context["cycle"] = BudgetCycle.objects.filter(is_active=True).first()
         context["daily_record"] = current_daily
         context["today_transactions"] = tx_dao.get_by_date(today)
-
         context["form"]["amount"]["value"] = ""
         context["form"]["category_id"]["value"] = ""
-
-    else:
-        context["daily_alert"] = get_daily_alert(daily_record)
 
     return render(request, "budget/expense_entry.html", context)
 
@@ -158,31 +205,31 @@ class HistoryView(View):
         if date_filter:
             transactions = transactions.filter(timestamp__date=date_filter)
 
-        # ✅ أداء أفضل
-        total_spent = transactions.aggregate(
-            total=Sum('amount')
-        )['total'] or 0
+        total_spent = transactions.aggregate(total=Sum('amount'))['total'] or 0
 
-        # ✅ categories حسب الفلتر
         categories = Category.objects.annotate(
-            total_spent=Sum(
-                'transaction__amount',
-                filter=Q(transaction__in=transactions)
-            )
+            total_spent=Sum('transaction__amount', filter=Q(transaction__in=transactions))
         )
 
         cycle = BudgetCycle.objects.filter(is_active=True).first()
         today = timezone.now().date()
-        daily_record = DailyRecord.objects.filter(cycle=cycle, date=today).first()
+        daily_record = DailyRecord.objects.filter(cycle=cycle, date=today).first() if cycle else None
 
         context = {
             'transactions': transactions,
             'categories': categories,
             'total_spent': total_spent,
             'daily_alert': get_daily_alert(daily_record),
+            'cycle_alert': get_cycle_alert(cycle),
         }
 
         return render(request, 'history.html', context)
+
+    def post(self, request):
+        transaction_id = request.POST.get('transaction_id')
+        if transaction_id:
+            Transaction.objects.filter(id=transaction_id).delete()
+        return redirect('/history/')
 
 
 # =========================
@@ -193,14 +240,9 @@ class NotificationView(View):
         cycle = BudgetCycle.objects.filter(is_active=True).first()
 
         if not cycle:
-            return render(request, 'notifications.html', {
-                'message': 'No active cycle found'
-            })
+            return render(request, 'notifications.html', {'message': 'No active cycle found'})
 
-        total_spent_amt = Transaction.objects.filter(cycle=cycle).aggregate(
-            Sum('amount')
-        )['amount__sum'] or 0
-
+        total_spent_amt = Transaction.objects.filter(cycle=cycle).aggregate(Sum('amount'))['amount__sum'] or 0
         spent_pct = (total_spent_amt / cycle.total_allowance) * 100 if cycle.total_allowance > 0 else 0
 
         if spent_pct >= 100:
@@ -215,9 +257,10 @@ class NotificationView(View):
             'notification_level': notification_level,
             'total_spent': total_spent_amt
         })
-    
+
+
 # =========================
-# DashboardView
+# DASHBOARD VIEW
 # =========================
 class DashboardView(View):
     def get(self, request):
@@ -227,7 +270,6 @@ class DashboardView(View):
             return render(request, 'dashboard.html', {'error': "No active cycle"})
 
         transactions = Transaction.objects.filter(cycle=cycle)
-
         spent = transactions.aggregate(Sum('amount'))['amount__sum'] or 0
         total = cycle.total_allowance or 0
         remaining = total - spent
@@ -237,13 +279,9 @@ class DashboardView(View):
 
         today = timezone.now().date()
         is_final_day = (cycle.end_date == today)
-
         spent_percentage = (spent / total * 100) if total > 0 else 0
         show_80_alert = spent_percentage >= 80
-
-        # مقارنة بسيطة وآمنة بدل التعقيد
         budget_is_tight = remaining < (total * 0.2)
-
         latest = transactions.order_by('-timestamp')[:5]
 
         return render(request, 'dashboard.html', {
@@ -252,7 +290,6 @@ class DashboardView(View):
             'remaining': remaining,
             'daily_limit': daily_limit,
             'latest': latest,
-
             'is_final_day': is_final_day,
             'spent_percentage': round(spent_percentage, 1),
             'show_80_alert': show_80_alert,
@@ -260,6 +297,9 @@ class DashboardView(View):
         })
 
 
+# =========================
+# STATS VIEW
+# =========================
 class StatsView(View):
     def get(self, request):
         cycle = BudgetCycle.objects.filter(is_active=True).first()
@@ -268,25 +308,13 @@ class StatsView(View):
             return render(request, 'stats.html', {'error': "No active cycle"})
 
         transactions = Transaction.objects.filter(cycle=cycle)
-
         total_spent = transactions.aggregate(Sum('amount'))['amount__sum'] or 0
 
-        category_data = (
-            transactions
-            .values('category__name')
-            .annotate(total=Sum('amount'))
-        )
-
+        category_data = transactions.values('category__name').annotate(total=Sum('amount'))
         labels = [d['category__name'] for d in category_data]
         values = [float(d['total']) for d in category_data]
 
-        daily_data = (
-            transactions
-            .values('timestamp__date')
-            .annotate(total=Sum('amount'))
-            .order_by('timestamp__date')
-        )
-
+        daily_data = transactions.values('timestamp__date').annotate(total=Sum('amount')).order_by('timestamp__date')
         line_labels = [str(d['timestamp__date']) for d in daily_data]
         line_values = [float(d['total']) for d in daily_data]
 
