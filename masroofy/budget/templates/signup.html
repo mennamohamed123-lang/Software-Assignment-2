@@ -1,31 +1,39 @@
 {% extends "base.html" %}
 
-{% block sidebar %}{% endblock %}
-
 {% block content %}
 
 <div class="auth-wrapper">
     <div class="auth-card">
 
-        <h3 class="text-center mb-4">Login</h3>
+        <h3 class="text-center mb-4">Create Account</h3>
 
-        {% for message in messages %}
-            <div class="alert alert-danger">{{ message }}</div>
-        {% endfor %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-3">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
 
         <form method="post">
             {% csrf_token %}
 
-            <input type="text" name="username" class="form-control mb-3" placeholder="Username">
+            <input type="text" name="username" class="form-control mb-3" placeholder="Username" required>
 
-            <input type="password" name="password" class="form-control mb-4" placeholder="Password">
+            <input type="email" name="email" class="form-control mb-3" placeholder="Email" required>
 
-            <button class="btn btn-primary w-100">Login</button>
+            <input type="password" name="password" class="form-control mb-3" placeholder="Password" required>
+
+            <input type="password" name="confirm_password" class="form-control mb-4" placeholder="Confirm Password" required>
+
+            <button type="submit" class="btn btn-success w-100">
+                Sign Up
+            </button>
         </form>
 
         <p class="text-center mt-3">
-            Don't have an account?
-            <a href="{% url 'signup' %}">Sign up</a>
+            Already have an account?
+            <a href="{% url 'login' %}">Login</a>
         </p>
 
     </div>
