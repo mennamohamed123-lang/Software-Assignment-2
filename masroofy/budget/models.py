@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 from .managers import CycleManager, TransactionManager, DailyRecordManager
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
@@ -34,6 +35,7 @@ class Category(models.Model):
 
 
 class BudgetCycle(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     objects = CycleManager()
 
     total_allowance   = models.FloatField()
@@ -68,6 +70,7 @@ class BudgetCycle(models.Model):
 
 
 class Transaction(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     objects = TransactionManager()
 
     amount    = models.FloatField()
@@ -89,6 +92,7 @@ class Transaction(models.Model):
 
 
 class DailyRecord(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     objects = DailyRecordManager()
 
     date            = models.DateField()

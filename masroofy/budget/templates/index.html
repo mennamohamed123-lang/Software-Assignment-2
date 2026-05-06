@@ -16,7 +16,6 @@
             background: #edf0f1;
         }
 
-        /* 🔵 Navbar */
         .navbar {
             background: #1D5D74;
         }
@@ -26,7 +25,6 @@
             text-decoration: none;
         }
 
-        /* 🔵 Button */
         .btn-main {
             background: #1D5D74;
             color: white;
@@ -39,13 +37,12 @@
         .btn-main:hover {
             opacity: 0.9;
             transform: scale(1.05);
-            background: #ff8c00 ;
+            background: #ff8c00;
         }
 
-        /* ✅ IMPORTANT FIX (ACTIVE STATE) */
         .btn-main:active {
-            background: #ff8c00 ;
-            color: white ;
+            background: #ff8c00;
+            color: white;
             transform: scale(0.97);
         }
 
@@ -53,7 +50,6 @@
             padding: 80px 0;
         }
 
-        /* 💡 Cards */
         .card-soft {
             background: white;
             border-radius: 15px;
@@ -77,17 +73,40 @@
 
 <body>
 
+<!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg px-5">
     <a class="navbar-brand fw-bold text-white" href="#">Masroofy</a>
 
     <div class="ms-auto">
+
         <a class="me-3 text-white" href="{% url 'home' %}">Home</a>
-        <a class="me-3 text-white" href="#">Login</a>
-        <button class="btn btn-main">Get Started</button>
+
+        {% if user.is_authenticated %}
+
+            <!-- 👤 User logged in -->
+            <span class="me-3 text-white">
+                👋 {{ user.username }}
+            </span>
+
+            <a class="me-3 text-white" href="{% url 'dashboard' %}">Dashboard</a>
+            <a class="me-3 text-white" href="{% url 'logout' %}">Logout</a>
+
+        {% else %}
+
+            <!-- 🔓 Guest -->
+            <a class="me-3 text-white" href="{% url 'login' %}">Login</a>
+            
+
+            <a href="{% url 'signup' %}" class="btn btn-main">
+                Get Started
+            </a>
+
+        {% endif %}
+
     </div>
 </nav>
 
-
+<!-- HERO -->
 <section class="container hero">
     <div class="row align-items-center">
 
@@ -102,14 +121,14 @@
                 without spreadsheets.
             </p>
 
-            <button class="btn btn-main me-2 mt-3">Get Started</button>
-            <button class="btn btn-outline-secondary mt-3">Login</button>
+            <a href="{% url 'signup' %}" class="btn btn-main me-2 mt-3">Get Started</a>
+            <a href="{% url 'login' %}" class="btn btn-outline-secondary mt-3">Login</a>
         </div>
 
     </div>
 </section>
 
-
+<!-- FEATURES -->
 <section class="container text-center py-5">
     <h2 class="mb-3">Smart Tools for Modern Students</h2>
     <p class="text-muted mb-5">Everything you need to manage your finances</p>
@@ -151,7 +170,7 @@
     </div>
 </section>
 
-<!-- 🪜 Steps -->
+<!-- STEPS -->
 <section class="container text-center py-5">
     <h2 class="mb-4">Simple 3-Step Setup</h2>
 
@@ -162,16 +181,16 @@
     </div>
 </section>
 
-
+<!-- CTA -->
 <section class="container py-5">
     <div class="cta-box text-center">
         <h2>Ready to start saving?</h2>
         <p>Join students using Masroofy today</p>
-        <button class="btn btn-light mt-3">Sign Up Now</button>
+        <a href="{% url 'signup' %}" class="btn btn-light mt-3">Sign Up Now</a>
     </div>
 </section>
 
-
+<!-- FOOTER -->
 <footer class="text-center py-4">
     <p>© 2026 Masroofy</p>
 </footer>
