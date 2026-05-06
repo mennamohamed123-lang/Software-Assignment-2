@@ -14,7 +14,7 @@ skinparam classBackgroundColor #FFFFFF
  
 skinparam classFontColor #1D5D74
 
-title Diagram 3 - History Management (US #8 & US #9)
+title Diagram 4 - History Management (US #8 & US #9)
 
 package "MODEL" #1D5D74 {
 
