@@ -1,32 +1,34 @@
 {% extends "base.html" %}
+
+{% block sidebar %}{% endblock %}
+
 {% block content %}
 
-<div class="container d-flex flex-column justify-content-center" style="min-height:80vh; max-width:400px;">
+<div class="auth-wrapper">
+    <div class="auth-card">
 
-    <h3 class="text-center mb-4">Login</h3>
+        <h3 class="text-center mb-4">Login</h3>
 
-    {% for message in messages %}
-        <div class="alert alert-danger">{{ message }}</div>
-    {% endfor %}
+        {% for message in messages %}
+            <div class="alert alert-danger">{{ message }}</div>
+        {% endfor %}
 
-    <form method="post" class="d-flex flex-column h-100">
-        {% csrf_token %}
+        <form method="post">
+            {% csrf_token %}
 
-        <input type="text" name="username" class="form-control mb-2" placeholder="Username">
+            <input type="text" name="username" class="form-control mb-3" placeholder="Username">
 
-        <input type="password" name="password" class="form-control mb-3" placeholder="Password">
+            <input type="password" name="password" class="form-control mb-4" placeholder="Password">
 
-        <!-- 🔥 يخلي الزرار تحت خالص -->
-        <div class="mt-auto">
             <button class="btn btn-primary w-100">Login</button>
-        </div>
-    </form>
+        </form>
 
-    <p class="text-center mt-3">
-        Don't have an account?
-        <a href="{% url 'signup' %}">Sign up</a>
-    </p>
+        <p class="text-center mt-3">
+            Don't have an account?
+            <a href="{% url 'signup' %}">Sign up</a>
+        </p>
 
+    </div>
 </div>
 
 {% endblock %}
