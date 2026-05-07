@@ -28,9 +28,6 @@ urlpatterns = [
     # DELETE single transaction
     path('record/delete/<int:tx_id>/', views.delete_transaction, name='delete_transaction'),
 
-    # Setup cycle (صفحة منفصلة - اختياري)
-    path('setup/', views.setup_cycle, name='setup_cycle'),
-
     # ── Dashboard ─────────────────────────────────────────
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
 
