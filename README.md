@@ -117,7 +117,7 @@ python manage.py runserver
 ## Screenshots
 
 - [Home](screenshots/home.png)
-- [History](https://github.com/masroofy-team/Software-Assignment-2/blob/main/Screenshots/History.png?raw=true)
+  [History](https://github.com/masroofy-team/Software-Assignment-2/blob/main/Screenshots/History.png?raw=true)
 - [Expense Page](screenshots\NewExpense.png)
 - [Stats](screenshots\stats.png)
 
