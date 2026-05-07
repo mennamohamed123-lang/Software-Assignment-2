@@ -114,16 +114,12 @@ python manage.py runserver
 
 ## 📸 Screenshots
 
-### Home Page
-![Home Page](screenshots/home.png)
+## Screenshots
 
-### Expense Tracking
-![Expense Tracking](screenshots/NewExpense.png)
-
-## Stats 
-![Stats](screenshots/stats.png)
-### History
-![History](screenshots/history.png)
+- [Home Page](screenshots\home.png)
+- [History](screenshots\History.png)
+- [Expense Page](screenshots\NewExpense.png)
+- [Stats](screenshots\stats.png)
 
 ---
 
