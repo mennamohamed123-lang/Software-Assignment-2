@@ -3,6 +3,11 @@
   "builds": [
     {
       "src": "masroofy/masroofy/wsgi.py",
+      "use": "@vercel/python",
+      "config": { "runtime": "python3.9" }
+    },
+    {
+      "src": "masroofy/manage.py",
       "use": "@vercel/python"
     }
   ],
