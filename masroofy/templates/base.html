@@ -121,6 +121,7 @@
            AUTH PAGES
         ===================================================== */
         body.auth-page {
+            padding-top: var(--bar-h);
             background: #f5f7f9;
         }
 
@@ -442,27 +443,35 @@
 
 
 <!-- =====================================================
-     NAVBAR — All users
+     NAVBAR — Guests only
 ===================================================== -->
-<nav class="navbar px-5">
+{% if not user.is_authenticated %}
+<nav class="navbar navbar-expand-lg fixed-top">
 
     <a class="navbar-brand" href="{% url 'home' %}">
         <i class="bi bi-wallet2"></i> Masroofy
     </a>
 
-    <div class="ms-auto d-flex align-items-center gap-2">
-        <a class="nav-link" href="{% url 'home' %}">Home</a>
+    <button class="navbar-toggler ms-auto" type="button"
+            data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+    </button>
 
-        {% if user.is_authenticated %}
-            <span class="nav-link">👋 {{ user.username }}</span>
-            <a class="nav-link" href="{% url 'logout' %}">Logout</a>
-        {% else %}
-            <a class="nav-link" href="{% url 'login' %}">Login</a>
-            <a href="{% url 'signup' %}" class="nav-link btn-main">Get Started</a>
-        {% endif %}
+    <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto align-items-center gap-1">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'home' %}">Home</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'login' %}">Login</a>
+            </li>
+            <li class="nav-item ms-lg-2">
+                <a href="{% url 'signup' %}" class="nav-link btn-main">Get Started</a>
+            </li>
+        </ul>
     </div>
-
 </nav>
+{% endif %}
 
 
 <!-- =====================================================
@@ -553,7 +562,10 @@
             <!-- Topbar (desktop only) -->
             {% if user.is_authenticated %}
             <div class="topbar d-none d-lg-flex">
-               
+                <div class="user-box">
+                    <span>👋 {{ user.username }}</span>
+                    
+                </div>
             </div>
             {% endif %}
 
