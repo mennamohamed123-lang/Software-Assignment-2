@@ -121,7 +121,6 @@
            AUTH PAGES
         ===================================================== */
         body.auth-page {
-            padding-top: var(--bar-h);
             background: #f5f7f9;
         }
 
@@ -443,35 +442,27 @@
 
 
 <!-- =====================================================
-     NAVBAR — Guests only
+     NAVBAR — All users
 ===================================================== -->
-{% if not user.is_authenticated %}
-<nav class="navbar navbar-expand-lg fixed-top">
+<nav class="navbar px-5">
 
     <a class="navbar-brand" href="{% url 'home' %}">
         <i class="bi bi-wallet2"></i> Masroofy
     </a>
 
-    <button class="navbar-toggler ms-auto" type="button"
-            data-bs-toggle="collapse" data-bs-target="#nav">
-        <span class="navbar-toggler-icon"></span>
-    </button>
+    <div class="ms-auto d-flex align-items-center gap-2">
+        <a class="nav-link" href="{% url 'home' %}">Home</a>
 
-    <div class="collapse navbar-collapse" id="nav">
-        <ul class="navbar-nav ms-auto align-items-center gap-1">
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'home' %}">Home</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'login' %}">Login</a>
-            </li>
-            <li class="nav-item ms-lg-2">
-                <a href="{% url 'signup' %}" class="nav-link btn-main">Get Started</a>
-            </li>
-        </ul>
+        {% if user.is_authenticated %}
+            <span class="nav-link">👋 {{ user.username }}</span>
+            <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+        {% else %}
+            <a class="nav-link" href="{% url 'login' %}">Login</a>
+            <a href="{% url 'signup' %}" class="nav-link btn-main">Get Started</a>
+        {% endif %}
     </div>
+
 </nav>
-{% endif %}
 
 
 <!-- =====================================================
@@ -562,13 +553,7 @@
             <!-- Topbar (desktop only) -->
             {% if user.is_authenticated %}
             <div class="topbar d-none d-lg-flex">
-                <div class="user-box">
-                    <span>👋 {{ user.username }}</span>
-                    <a href="{% url 'logout' %}" class="btn btn-danger btn-sm"
-                       style="border-radius:6px; font-size:.82rem;">
-                        Logout
-                    </a>
-                </div>
+               
             </div>
             {% endif %}
 
