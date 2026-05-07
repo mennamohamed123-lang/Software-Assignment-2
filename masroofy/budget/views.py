@@ -1014,7 +1014,7 @@ class NotificationView(View):
         else:
             notification_level = "success"
 
-        today        = timezone.now().date()
+        today = timezone.now().date()
         daily_record = None
         if cycle:
             daily_record, _ = DailyRecord.objects.get_or_create(
