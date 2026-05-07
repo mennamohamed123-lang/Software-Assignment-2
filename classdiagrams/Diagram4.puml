@@ -11,7 +11,7 @@ skinparam classArrowColor #D66D55
 skinparam ArrowThickness 3
 skinparam ClassFontSize 20
 skinparam classBackgroundColor #FFFFFF
- 
+
 skinparam classFontColor #1D5D74
 
 title Diagram 4 - History Management (US #8 & US #9)
