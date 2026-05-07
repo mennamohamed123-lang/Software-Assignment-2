@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "masroofy/*.py",
+      "src": "masroofy/wsgi.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "masroofy/budget.py"
+      "dest": "masroofy/wsgi.py"
     }
   ]
 }
