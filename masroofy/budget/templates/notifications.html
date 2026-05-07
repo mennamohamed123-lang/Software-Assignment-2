@@ -1,84 +1,101 @@
 {% extends 'base.html' %}
-
-{% block title %}Notifications - Masroofy{% endblock %}
-
-{% block active_notifications %}active{% endblock %}
+{% block title %}Notifications — Masroofy{% endblock %}
 
 {% block extra_css %}
 <style>
-    .alert-box {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    }
+.notif-card {
+    border: none;
+    border-radius: 14px;
+    padding: 28px 26px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    margin-bottom: 16px;
+}
+.notif-card .n-icon {
+    font-size: 2.2rem;
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.notif-card h5 { font-weight: 700; margin-bottom: 4px; font-size: 1rem; }
+.notif-card p { margin: 0; font-size: .88rem; opacity: .75; }
+.progress-wrap { background:#fff; border-radius:14px; padding:24px; box-shadow:0 2px 16px rgba(0,0,0,0.07); }
+.progress-wrap h6 { font-weight:700; font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; color:#6b7a8d; margin-bottom:16px; }
+.progress { height: 28px; border-radius: 10px; background: #f0f4f7; }
+.progress-bar { border-radius: 10px; font-weight: 700; font-size: .85rem; }
+.page-header h4 { font-weight: 800; font-size: 1.35rem; margin: 0; }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<h4 class="mb-4 text-muted">
-    <i class="bi bi-bell"></i> Notifications
-</h4>
+<div class="d-flex align-items-center mb-4 gap-2">
+    <h4 class="fw-bold mb-0" style="font-size:1.35rem;color:#1e2d3d;">
+        <i class="bi bi-bell me-2" style="color:#1D5D74;"></i>Notifications
+    </h4>
+</div>
 
 {% if message %}
 
-<div class="alert alert-info alert-box">
-    <i class="bi bi-info-circle me-2"></i> {{ message }}
+<div class="notif-card" style="background:#eff6ff;border-left:4px solid #3b82f6;">
+    <div class="n-icon" style="background:#dbeafe;color:#3b82f6;">ℹ️</div>
+    <div>
+        <h5 style="color:#1e3a5f;">Info</h5>
+        <p style="color:#1e3a5f;">{{ message }}</p>
+    </div>
 </div>
 
 {% elif notification_level == "danger" %}
 
-<div class="alert alert-danger alert-box d-flex align-items-center p-4">
-    <i class="bi bi-x-circle-fill fs-3 me-3"></i>
+<div class="notif-card" style="background:#fff5f5;border-left:4px solid #ef4444;">
+    <div class="n-icon" style="background:#fee2e2;color:#ef4444;">🚨</div>
     <div>
-        <h5 class="mb-1">Budget Exhausted!</h5>
-        <p class="mb-0">You have spent <strong>100%</strong> of your budget.</p>
+        <h5 style="color:#7f1d1d;">Budget Exhausted!</h5>
+        <p style="color:#7f1d1d;">You have spent <strong>100%</strong> of your total budget. Consider setting a new budget cycle.</p>
     </div>
 </div>
 
 {% elif notification_level == "warning" %}
 
-<div class="alert alert-warning alert-box d-flex align-items-center p-4">
-    <i class="bi bi-exclamation-triangle-fill fs-3 me-3"></i>
+<div class="notif-card" style="background:#fffbeb;border-left:4px solid #f59e0b;">
+    <div class="n-icon" style="background:#fef3c7;color:#f59e0b;">⚠️</div>
     <div>
-        <h5 class="mb-1">Warning!</h5>
-        <p class="mb-0">
-            You have used <strong>{{ spent_pct|floatformat:1 }}%</strong> of your budget.
-        </p>
+        <h5 style="color:#78350f;">Budget Warning</h5>
+        <p style="color:#78350f;">You have used <strong>{{ spent_pct|floatformat:1 }}%</strong> of your budget. Spend carefully!</p>
     </div>
 </div>
 
 {% else %}
 
-<div class="alert alert-success alert-box d-flex align-items-center p-4">
-    <i class="bi bi-check-circle-fill fs-3 me-3"></i>
+<div class="notif-card" style="background:#f0faf4;border-left:4px solid #22c55e;">
+    <div class="n-icon" style="background:#dcfce7;color:#22c55e;">✅</div>
     <div>
-        <h5 class="mb-1">You're on track!</h5>
-        <p class="mb-0">
-            You have spent <strong>{{ spent_pct|floatformat:1 }}%</strong>.
-        </p>
+        <h5 style="color:#166534;">You're on track!</h5>
+        <p style="color:#166534;">You have spent <strong>{{ spent_pct|floatformat:1 }}%</strong> of your budget. Keep it up!</p>
     </div>
 </div>
 
 {% endif %}
 
-{% if spent_pct %}
-
-<div class="card p-4 mt-3">
-    <h6 class="text-muted mb-3">Budget Usage</h6>
-
-    <div class="progress" style="height: 25px; border-radius: 10px;">
+{% if spent_pct is not None %}
+<div class="progress-wrap mt-2">
+    <h6>Budget Usage</h6>
+    <div class="progress">
         <div class="progress-bar
             {% if spent_pct >= 100 %}bg-danger
             {% elif spent_pct >= 80 %}bg-warning
             {% else %}bg-success{% endif %}"
-            style="width: {{ spent_pct }}%;">
+            style="width: {% if spent_pct > 100 %}100{% else %}{{ spent_pct|floatformat:1 }}{% endif %}%;">
             {{ spent_pct|floatformat:1 }}%
         </div>
     </div>
-
 </div>
-
 {% endif %}
 
 {% endblock %}

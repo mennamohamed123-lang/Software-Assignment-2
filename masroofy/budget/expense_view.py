@@ -44,6 +44,7 @@ class ExpenseView:
         category_id: int,
         cycle_id: int,
         timestamp=None,
+        user=None,
     ) -> dict:
         """
         Main entry point.
@@ -59,16 +60,16 @@ class ExpenseView:
         """
         # ── 1. Validate ──────────────────────────────────────────────────────
         if not amount or amount <= 0:
-            return self._error("المبلغ لازم يكون أكبر من صفر")
+            return self._error("Amount must be greater than zero")
 
         category = self.cat_dao.get_by_id(category_id)
         if category is None:
-            return self._error(f"الفئة رقم {category_id} مش موجودة")
+            return self._error(f"Category {category_id} not found")
 
         try:
             cycle = BudgetCycle.objects.get(pk=cycle_id, is_active=True)
         except BudgetCycle.DoesNotExist:
-            return self._error("مفيش دورة ميزانية نشطة بالـ id ده")
+            return self._error("No active budget cycle found with this ID")
 
         ts = timestamp or timezone.now()
         today = ts.date() if hasattr(ts, "date") else ts
@@ -83,10 +84,11 @@ class ExpenseView:
                 cycle_id=cycle_id,
                 timestamp=ts,
             )
-            tx = self.tx_dao.insert(tx)
+            tx = self.tx_dao.insert(tx, user=user)
 
             # Update or create DailyRecord for today
             daily, _ = DailyRecord.objects.get_or_create(
+                user=user,
                 cycle=cycle,
                 date=today,
                 defaults={
@@ -106,13 +108,13 @@ class ExpenseView:
 
         if cycle.remaining_balance < 0:
             status  = self.STATUS_OVER_CYCLE
-            message = f"⚠️ تجاوزت الميزانية الكلية! الرصيد: {cycle.remaining_balance:.2f}"
+            message = f"⚠️ Total budget exceeded! Remaining balance: {cycle.remaining_balance:.2f} EGP"
         elif daily_remaining < 0:
             status  = self.STATUS_OVER_DAILY
-            message = f"⚠️ تجاوزت حد اليوم! المتبقي من اليوم: {daily_remaining:.2f}"
+            message = f"⚠️ Daily limit exceeded! Remaining today: {daily_remaining:.2f} EGP"
         else:
             status  = self.STATUS_OK
-            message = f"✅ تم تسجيل المصروف. المتبقي: {cycle.remaining_balance:.2f}"
+            message = f"✅ Expense saved. Remaining: {cycle.remaining_balance:.2f} EGP"
 
         return {
             "status": status,
@@ -126,6 +128,14 @@ class ExpenseView:
 
     @staticmethod
     def _error(msg: str) -> dict:
+        """Creates an error result dictionary.
+
+        Args:
+            msg: The error message.
+
+        Returns:
+            A dictionary with error status and message.
+        """
         return {
             "status": ExpenseView.STATUS_ERROR,
             "message": msg,

@@ -1,190 +1,615 @@
 {% extends 'base.html' %}
-
 {% block title %}New Expense | Masroofy{% endblock %}
-
-{% block active_record %}active{% endblock %}
 
 {% block extra_css %}
 <style>
-    .cat-chip { position: relative; }
-    .cat-chip input[type="radio"] { position: absolute; opacity: 0; width: 0; }
-    .chip-inner {
-        cursor: pointer; background-color: #fff; border: 2px solid #dee2e6;
-        border-radius: 10px; padding: 14px 8px; text-align: center;
-        transition: all 0.2s; display: flex; flex-direction: column;
-        align-items: center; gap: 6px; min-height: 85px; justify-content: center;
-    }
-    .chip-inner:hover { border-color: #1D5D74; background-color: #f0f8fb; }
-    .cat-chip input:checked ~ .chip-inner {
-        border-color: #1D5D74; background-color: #e8f4f8;
-        box-shadow: 0 3px 10px rgba(29,93,116,0.15);
-    }
-    .alert-ok    { background:#e8f5e9; color:#1b5e20; border-radius:8px; padding:.75rem 1rem; border-left:4px solid #2e7d32; margin-bottom:1rem; }
-    .alert-warn  { background:#fff3e0; color:#bf360c; border-radius:8px; padding:.75rem 1rem; border-left:4px solid #f57c00; margin-bottom:1rem; }
-    .alert-error { background:#fce4ec; color:#880e4f; border-radius:8px; padding:.75rem 1rem; border-left:4px solid #c62828; margin-bottom:1rem; }
-    .tx-row { display:flex; justify-content:space-between; align-items:center; padding:.5rem 0; border-bottom:1px solid #f0f0f0; }
-    .tx-row:last-child { border-bottom:none; }
-    .btn-delete-tx { background:none; border:none; color:#dc3545; cursor:pointer; padding:2px 6px; border-radius:4px; font-size:0.85rem; transition:background 0.2s; }
-    .btn-delete-tx:hover { background-color:#fce4ec; }
+  /* ── Category chips ─────────────────────────────── */
+  .cat-chip { position: relative; }
+  .cat-chip input[type="radio"] { position: absolute; opacity: 0; width: 0; }
+  .chip-inner {
+    cursor: pointer; background: #fff; border: 1.5px solid #e2e8ed;
+    border-radius: 10px; padding: 12px 6px; text-align: center;
+    transition: all 0.18s; display: flex; flex-direction: column;
+    align-items: center; gap: 5px; min-height: 80px; justify-content: center;
+  }
+  .chip-inner:hover { border-color: #1D5D74; background: #f5fbfd; }
+  .cat-chip input:checked ~ .chip-inner {
+    border-color: #1D5D74; background: #eaf4f8;
+    box-shadow: 0 2px 8px rgba(29,93,116,0.12);
+  }
+
+  /* ── Inline alerts ──────────────────────────────── */
+  .inline-alert {
+    display: flex; align-items: flex-start; gap: 12px;
+    border-radius: 10px; padding: 13px 16px; margin-bottom: 14px;
+    font-size: .9rem;
+  }
+  .inline-alert .ia-icon { font-size: 1rem; flex-shrink: 0; margin-top: 2px; font-weight: 700; }
+  .inline-alert .ia-body { flex: 1; }
+  .inline-alert .ia-title { font-weight: 600; margin-bottom: 1px; }
+  .inline-alert .ia-sub   { font-size: .78rem; opacity: .65; margin-top: 2px; }
+  .inline-alert.ok      { background: #f0faf4; color: #166534; border-left: 3px solid #22c55e; }
+  .inline-alert.warn    { background: #fffbeb; color: #78350f; border-left: 3px solid #f59e0b; }
+  .inline-alert.danger  { background: #fff5f5; color: #7f1d1d; border-left: 3px solid #ef4444; }
+  .inline-alert.info    { background: #eff6ff; color: #1e3a5f; border-left: 3px solid #3b82f6; }
+  .ia-close {
+    background: none; border: none; opacity: .4; cursor: pointer;
+    font-size: 1.1rem; line-height: 1; color: inherit; padding: 0 2px; flex-shrink: 0;
+  }
+  .ia-close:hover { opacity: .8; }
+
+  /* ── Transactions list ──────────────────────────── */
+  .tx-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 0; border-bottom: 1px solid #f3f4f6;
+  }
+  .tx-row:last-child { border-bottom: none; }
+  .btn-del {
+    background: none; border: none; color: #c9d0d8; cursor: pointer;
+    padding: 4px 7px; border-radius: 6px; font-size: .85rem; transition: all .18s;
+  }
+  .btn-del:hover { background: #fff0f0; color: #dc2626; }
+
+  /* ── Countdown banner ───────────────────────────── */
+  .cycle-banner {
+    background: linear-gradient(135deg, #1D5D74 0%, #164e63 100%);
+    border-radius: 14px; padding: 18px 22px; color: #fff;
+    display: flex; align-items: center; gap: 18px;
+    box-shadow: 0 4px 18px rgba(29,93,116,0.18);
+    margin-bottom: 20px; position: relative; overflow: hidden;
+    transition: opacity .2s;
+  }
+  .cycle-banner::after {
+    content: ''; position: absolute; right: -20px; top: -20px;
+    width: 110px; height: 110px; border-radius: 50%;
+    background: rgba(255,255,255,0.05); pointer-events: none;
+  }
+  .cb-donut { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+  .cb-donut svg { transform: rotate(-90deg); }
+  .d-bg  { fill: none; stroke: rgba(255,255,255,0.12); stroke-width: 5; }
+  .d-val { fill: none; stroke: #6ee7c7; stroke-width: 5; stroke-linecap: round; }
+  .d-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; line-height: 1;
+  }
+  .d-num { font-size: 1.1rem; font-weight: 800; }
+  .d-lbl { font-size: .48rem; opacity: .65; margin-top: 2px; letter-spacing: .06em; text-transform: uppercase; }
+  .cb-info { flex: 1; z-index: 1; }
+  .cb-label   { font-size: .7rem; opacity: .6; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 2px; }
+  .cb-balance { font-size: 1.28rem; font-weight: 800; }
+  .cb-dates   { font-size: .75rem; opacity: .65; margin-top: 2px; }
+  .cb-bar     { margin-top: 8px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
+  .cb-bar-fill { height: 100%; background: #6ee7c7; border-radius: 4px; }
+  .cb-edit {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22);
+    color: #fff; border-radius: 8px; padding: 6px 13px; font-size: .77rem;
+    font-weight: 600; cursor: pointer; transition: background .18s; z-index: 1;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .cb-edit:hover { background: rgba(255,255,255,0.22); }
+
+  /* ── Setup / edit form card ─────────────────────── */
+  .setup-card {
+    background: #fff; border-radius: 14px;
+    border: 1.5px dashed #c8dde5; padding: 22px 22px 18px; margin-bottom: 20px;
+  }
+  .sc-title { color: #1D5D74; font-weight: 700; font-size: .93rem; margin-bottom: 14px; }
+  .sc-note  { font-size: .78rem; color: #8a9aab; margin-top: -10px; margin-bottom: 14px; }
+
+  .dur-toggle { display: flex; gap: 6px; margin-bottom: 10px; }
+  .dur-toggle button {
+    flex: 1; padding: 7px 0; border-radius: 7px;
+    border: 1.5px solid #dce6ea; background: #f7fafb;
+    color: #4a5568; font-weight: 600; font-size: .81rem; cursor: pointer; transition: all .18s;
+  }
+  .dur-toggle button.active { background: #1D5D74; color: #fff; border-color: #1D5D74; }
+
+  .preview-pills { display: none; gap: 8px; flex-wrap: wrap; margin: 10px 0 14px; }
+  .preview-pills.show { display: flex; }
+  .preview-pill {
+    flex: 1; min-width: 100px; background: #f0f8fb;
+    border-radius: 8px; padding: 8px 12px; text-align: center;
+  }
+  .pp-label { font-size: .67rem; color: #8a9aab; margin-bottom: 2px; }
+  .pp-val   { font-size: .88rem; font-weight: 700; color: #1D5D74; }
+
+  .btn-start {
+    width: 100%; padding: 11px; background: #1D5D74; color: #fff;
+    border: none; border-radius: 9px; font-weight: 700; font-size: .9rem;
+    cursor: pointer; transition: background .18s;
+  }
+  .btn-start:hover { background: #D66D55; }
+
+  /* ── Save button ────────────────────────────────── */
+  .btn-save {
+    width: 100%; padding: 13px; background: #1D5D74; color: #fff;
+    border: none; border-radius: 9px; font-weight: 700; font-size: .93rem;
+    cursor: pointer; transition: background .18s, transform .1s;
+  }
+  .btn-save:hover  { background: #D66D55; }
+  .btn-save:active { transform: scale(.98); }
 </style>
 {% endblock %}
 
 {% block content %}
-<h4 class="mb-4 text-muted"><i class="bi bi-plus-circle"></i> New Expense</h4>
+<h4 class="mb-4" style="color:#2d3748;font-weight:700;">
+  <i class="bi bi-plus-circle me-2" style="color:#1D5D74;"></i>New Expense
+</h4>
 
-<!-- تنبيه الحفظ -->
+<!-- ════════════════════════════════
+     NO CYCLE → Setup form
+════════════════════════════════ -->
+{% if not cycle %}
+
+<div class="setup-card">
+  <div class="sc-title"><i class="bi bi-wallet2 me-2"></i>Set Up Your Budget</div>
+
+  {% if cycle_errors %}
+  <div class="inline-alert danger mb-3">
+    <span class="ia-icon">!</span>
+    <div class="ia-body">
+      {% for e in cycle_errors %}<div>{{ e }}</div>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="POST" action="/record/">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="create_cycle">
+    <div class="row g-3 mb-2">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold text-muted" style="font-size:.82rem;">Total Budget (EGP)</label>
+        <input type="number" name="total_allowance" step="0.01" min="1"
+               class="form-control" placeholder="e.g. 3000"
+               value="{{ cycle_form.total_allowance|default:'' }}" id="setupBudget" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold text-muted" style="font-size:.82rem;">Duration</label>
+        <div class="dur-toggle">
+          <button type="button" id="btnDays" class="active" onclick="setMode('days')">No. of Days</button>
+          <button type="button" id="btnDate" onclick="setMode('date')">End Date</button>
+        </div>
+        <div id="daysSection">
+          <input type="number" name="duration_days" id="setupDays" min="1" max="365"
+                 class="form-control" placeholder="e.g. 30"
+                 value="{{ cycle_form.duration_days|default:'' }}">
+        </div>
+        <div id="dateSection" style="display:none;">
+          <input type="date" name="end_date" id="setupEndDate" class="form-control"
+                 value="{{ cycle_form.end_date|default:'' }}">
+        </div>
+      </div>
+    </div>
+    <div class="preview-pills" id="setupPreview">
+      <div class="preview-pill"><div class="pp-label">Daily Limit</div><div class="pp-val" id="pvDaily">—</div></div>
+      <div class="preview-pill"><div class="pp-label">Total Days</div><div class="pp-val" id="pvDays">—</div></div>
+      <div class="preview-pill"><div class="pp-label">Ends On</div><div class="pp-val" id="pvEnd">—</div></div>
+    </div>
+    <button type="submit" class="btn-start">Start Budget</button>
+  </form>
+</div>
+
+<!-- ════════════════════════════════
+     ACTIVE CYCLE → Main view
+════════════════════════════════ -->
+{% else %}
+
+<!-- ── Countdown banner ── -->
+<div class="cycle-banner" id="cycleBanner">
+  <div class="cb-donut">
+    <svg viewBox="0 0 64 64" width="64" height="64">
+      <circle class="d-bg"  cx="32" cy="32" r="26"/>
+      <circle class="d-val" cx="32" cy="32" r="26" id="donutArc"/>
+    </svg>
+    <div class="d-center">
+      <div class="d-num">{{ days_left }}</div>
+      <div class="d-lbl">days left</div>
+    </div>
+  </div>
+  <div class="cb-info">
+    <div class="cb-label">Remaining Balance</div>
+    <div class="cb-balance">{{ cycle.remaining_balance|floatformat:2 }} EGP</div>
+    <div class="cb-dates">{{ cycle.start_date }} — {{ cycle.end_date }}</div>
+    <div class="cb-bar">
+      <div class="cb-bar-fill" style="width:{% widthratio days_left total_days 100 %}%"></div>
+    </div>
+  </div>
+  <!-- زرين منفصلين -->
+  <div class="d-flex gap-2 flex-shrink-0">
+    <button class="cb-edit" onclick="toggleEdit()" title="Edit budget — transactions stay">
+      <i class="bi bi-pencil me-1"></i>Edit
+    </button>
+    <button class="cb-edit"
+            style="background:rgba(214,109,85,0.25);border-color:rgba(214,109,85,0.5);"
+            onclick="toggleReset()"
+            title="Reset budget — deletes ALL transactions">
+      <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+    </button>
+  </div>
+</div>
+
+
+<!-- ── EDIT CARD (بدون مسح transactions) ── -->
+<div class="setup-card" id="editCard" style="display:none;">
+  <div class="sc-title">
+    <i class="bi bi-pencil me-2"></i>Edit Budget
+    <span style="font-size:.75rem;color:#6b7a8d;font-weight:400;margin-left:6px;">
+      — Existing transactions will be kept
+    </span>
+  </div>
+  <div class="sc-note">
+    Change your total budget or end date. All existing transactions stay intact —
+    the remaining balance will be recalculated automatically.
+  </div>
+
+  <form method="POST" action="/record/">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="edit_cycle">
+
+    <div class="row g-3 mb-2">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold text-muted" style="font-size:.82rem;">New Total Budget (EGP)</label>
+        <input type="number" name="total_allowance" step="0.01" min="1"
+               class="form-control" placeholder="e.g. 3500"
+               value="{{ cycle.total_allowance|floatformat:2 }}"
+               id="editBudget" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold text-muted" style="font-size:.82rem;">Duration</label>
+        <div class="dur-toggle">
+          <button type="button" id="eBtnDays" class="active" onclick="setEditMode('days')">No. of Days</button>
+          <button type="button" id="eBtnDate"                onclick="setEditMode('date')">End Date</button>
+        </div>
+        <div id="eDaysSection">
+          <input type="number" name="duration_days" id="editDays" min="1" max="365"
+                 class="form-control" placeholder="e.g. 30">
+        </div>
+        <div id="eDateSection" style="display:none;">
+          <input type="date" name="end_date" id="editEndDate" class="form-control"
+                 value="{{ cycle.end_date }}">
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-pills" id="editPreview">
+      <div class="preview-pill"><div class="pp-label">New Daily Limit</div><div class="pp-val" id="epvDaily">—</div></div>
+      <div class="preview-pill"><div class="pp-label">Total Days</div><div class="pp-val" id="epvDays">—</div></div>
+      <div class="preview-pill"><div class="pp-label">Ends On</div><div class="pp-val" id="epvEnd">—</div></div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn-start" style="flex:1;">
+        <i class="bi bi-check-circle me-1"></i>Save Changes
+      </button>
+      <button type="button" onclick="toggleEdit()"
+        style="padding:11px 16px;border-radius:9px;border:1.5px solid #dce6ea;
+               background:#f7fafb;font-weight:600;cursor:pointer;font-size:.83rem;color:#4a5568;">
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+
+
+<!-- ── RESET CARD (يمسح كل الـ transactions) ── -->
+<div class="setup-card" id="resetCard"
+     style="display:none; border-color:#f5c6c6; background:#fffafa;">
+  <div class="sc-title" style="color:#c0392b;">
+    <i class="bi bi-exclamation-triangle me-2"></i>Reset Budget
+    <span style="font-size:.75rem;color:#e57373;font-weight:400;margin-left:6px;">
+      — All transactions will be deleted
+    </span>
+  </div>
+  <div class="sc-note" style="color:#c0392b;">
+    ⚠️ This will permanently delete <strong>all transactions</strong> in the current cycle
+    and restart the budget from today. This cannot be undone.
+  </div>
+
+  <form method="POST" action="/record/"
+        onsubmit="return confirm('⚠️ Are you sure? This will delete ALL transactions and reset your budget from today.')">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="reset_cycle">
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold" style="font-size:.82rem;color:#c0392b;">Total Budget (EGP)</label>
+        <input type="number" name="total_allowance" step="0.01" min="1"
+               class="form-control"
+               value="{{ cycle.total_allowance|floatformat:2 }}"
+               id="resetBudget">
+        <div style="font-size:.72rem;color:#888;margin-top:4px;">Leave as is to keep the same amount</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold" style="font-size:.82rem;color:#c0392b;">New Duration (optional)</label>
+        <input type="number" name="duration_days" min="1" max="365"
+               class="form-control" placeholder="Leave empty = keep same duration"
+               id="resetDays">
+        <div style="font-size:.72rem;color:#888;margin-top:4px;">
+          Current end: {{ cycle.end_date }}
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit"
+              style="flex:1;padding:11px;background:#e74c3c;color:#fff;border:none;
+                     border-radius:9px;font-weight:700;font-size:.9rem;cursor:pointer;">
+        <i class="bi bi-trash3 me-1"></i>Reset & Clear All Transactions
+      </button>
+      <button type="button" onclick="toggleReset()"
+        style="padding:11px 16px;border-radius:9px;border:1.5px solid #dce6ea;
+               background:#f7fafb;font-weight:600;cursor:pointer;font-size:.83rem;color:#4a5568;">
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+
+
+<!-- Alerts -->
 {% if result_message %}
-<div class="{% if result_status == 'ok' %}alert-ok{% elif result_status == 'error' %}alert-error{% else %}alert-warn{% endif %}">
-    <i class="bi {% if result_status == 'ok' %}bi-check-circle-fill{% else %}bi-exclamation-octagon-fill{% endif %} me-2"></i>
-    {{ result_message }}
+<div class="inline-alert {% if result_status == 'ok' %}ok{% elif result_status == 'error' %}danger{% else %}warn{% endif %}">
+  <span class="ia-icon">{% if result_status == 'ok' %}✓{% else %}!{% endif %}</span>
+  <div class="ia-body"><div class="ia-title">{{ result_message }}</div></div>
 </div>
 {% endif %}
 
-<!-- ✅ تنبيه الميزانية الكلية -->
 {% if cycle_alert %}
-<div class="alert alert-{{ cycle_alert.type }} alert-dismissible fade show shadow-sm border-0 mb-3" role="alert"
-     style="
-        background-color: {% if cycle_alert.type == 'danger' %}#f8d7da{% elif cycle_alert.type == 'warning' %}#fff3cd{% else %}#d1ecf1{% endif %};
-        border-left: 5px solid {% if cycle_alert.type == 'danger' %}#dc3545{% elif cycle_alert.type == 'warning' %}#ffc107{% else %}#17a2b8{% endif %} !important;
-     ">
-    <div class="d-flex align-items-center">
-        <span class="fs-4 me-3">{% if cycle_alert.type == 'danger' %}🚨{% elif cycle_alert.type == 'warning' %}⚠️{% else %}ℹ️{% endif %}</span>
-        <div>
-            <h6 class="mb-0 fw-bold text-dark">{{ cycle_alert.msg }}</h6>
-            <small class="text-muted">Total Budget Alert</small>
-        </div>
-    </div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<div class="inline-alert {{ cycle_alert.type }}">
+  <span class="ia-icon">{% if cycle_alert.type == 'danger' %}✕{% elif cycle_alert.type == 'warning' %}!{% else %}i{% endif %}</span>
+  <div class="ia-body">
+    <div class="ia-title">{{ cycle_alert.msg }}</div>
+    <div class="ia-sub">Total budget</div>
+  </div>
+  <button class="ia-close" onclick="this.closest('.inline-alert').remove()">×</button>
 </div>
 {% endif %}
 
-<!-- ✅ تنبيه الليميت اليومي -->
 {% if daily_alert %}
-<div class="alert alert-{{ daily_alert.type }} alert-dismissible fade show shadow-sm border-0 mb-4" role="alert"
-     style="
-        background-color: {% if daily_alert.type == 'danger' %}#f8d7da{% elif daily_alert.type == 'warning' %}#fff3cd{% else %}#d1ecf1{% endif %};
-        border-left: 5px solid {% if daily_alert.type == 'danger' %}#dc3545{% elif daily_alert.type == 'warning' %}#ffc107{% else %}#17a2b8{% endif %} !important;
-     ">
-    <div class="d-flex align-items-center">
-        <span class="fs-4 me-3">{% if daily_alert.type == 'danger' %}🚨{% elif daily_alert.type == 'warning' %}⚠️{% else %}ℹ️{% endif %}</span>
-        <div>
-            <h6 class="mb-0 fw-bold text-dark">{{ daily_alert.msg }}</h6>
-            <small class="text-muted">Daily Budget Alert</small>
-        </div>
-    </div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<div class="inline-alert {{ daily_alert.type }}">
+  <span class="ia-icon">{% if daily_alert.type == 'danger' %}✕{% elif daily_alert.type == 'warning' %}!{% else %}i{% endif %}</span>
+  <div class="ia-body">
+    <div class="ia-title">{{ daily_alert.msg }}</div>
+    <div class="ia-sub">Daily limit</div>
+  </div>
+  <button class="ia-close" onclick="this.closest('.inline-alert').remove()">×</button>
 </div>
 {% endif %}
 
-{% if cycle %}
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card p-3" style="border-left: 4px solid #1D5D74;">
-            <div class="text-muted small">Remaining Balance</div>
-            <div class="fs-3 fw-bold" style="color:#1D5D74;">{{ cycle.remaining_balance|floatformat:2 }} EGP</div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card p-3" style="border-left: 4px solid #D66D55;">
-            <div class="text-muted small">Daily Limit</div>
-            <div class="fs-3 fw-bold text-dark">{{ cycle.safe_daily_limit|floatformat:2 }} EGP</div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card p-3" style="border-left: 4px solid #28a745;">
-            <div class="text-muted small">Spent Today</div>
-            <div class="fs-3 fw-bold text-danger">
-                {% if daily_record %}{{ daily_record.total_spent|floatformat:2 }}{% else %}0.00{% endif %} EGP
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 
+<!-- KPI cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card p-3" style="border-left:3px solid #1D5D74;">
+      <div class="text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Remaining</div>
+      <div class="fw-bold" style="font-size:1.5rem;color:#1D5D74;line-height:1;">
+        {{ cycle.remaining_balance|floatformat:2 }}<span style="font-size:.75rem;font-weight:500;margin-left:3px;">EGP</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3" style="border-left:3px solid #D66D55;">
+      <div class="text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Daily Limit</div>
+      <div class="fw-bold" style="font-size:1.5rem;color:#2d3748;line-height:1;">
+        {{ dynamic_daily_limit|floatformat:2 }}<span style="font-size:.75rem;font-weight:500;margin-left:3px;">EGP</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3" style="border-left:3px solid #28a745;">
+      <div class="text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Spent Today</div>
+      <div class="fw-bold" style="font-size:1.5rem;color:#c53030;line-height:1;">
+        {{ spent_today|floatformat:2 }}<span style="font-size:.75rem;font-weight:500;margin-left:3px;">EGP</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Form + Transactions -->
 <div class="row">
-    <div class="col-md-7">
-        <div class="card p-4 mb-4">
-            <h6 class="text-muted mb-3"><i class="bi bi-pencil-square"></i> Record New Expense</h6>
-
-            {% if not cycle %}
-            <div class="alert-error">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                No active budget cycle —
-                <a href="/admin/budget/budgetcycle/add/" style="color:inherit;font-weight:600;">add one from Admin</a>.
-            </div>
-            {% else %}
-            <form method="post" action="/record/" autocomplete="off">
-                {% csrf_token %}
-                <input type="hidden" name="cycle_id" value="{{ cycle.id }}">
-                <div class="mb-4">
-                    <label class="form-label fw-semibold text-muted">Amount (EGP)</label>
-                    <input type="number" name="amount" step="0.01" min="0.01"
-                           class="form-control form-control-lg" style="border-radius:8px;"
-                           placeholder="0.00" value="{{ form.amount.value|default:'' }}"
-                           required autofocus>
-                </div>
-                <div class="mb-4">
-                    <label class="form-label fw-semibold text-muted">Category</label>
-                    <div class="row g-2">
-                        {% for cat in categories %}
-                        <div class="col-4 col-sm-3">
-                            <label class="cat-chip w-100">
-                                <input type="radio" name="category_id" value="{{ cat.id }}"
-                                    {% if form.category_id.value == cat.id|stringformat:'s' %}checked{% endif %} required>
-                                <div class="chip-inner">
-                                    <span style="font-size:1.6rem;">{{ cat.icon_emoji }}</span>
-                                    <span class="small fw-semibold">{{ cat.name }}</span>
-                                </div>
-                            </label>
-                        </div>
-                        {% empty %}
-                        <p class="text-muted small">No categories — add from Admin.</p>
-                        {% endfor %}
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold"
-                        style="border-radius:8px; background-color:#1D5D74; border:none;">
-                    <i class="bi bi-check-circle me-2"></i>Save Transaction
-                </button>
-            </form>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="col-md-5">
-        <div class="card p-3">
-            <h6 class="text-muted mb-3">
-                <i class="bi bi-list-ul"></i> Today's Transactions
-                <span class="badge bg-secondary ms-2">{{ today_transactions|length }}</span>
-            </h6>
-            {% if today_transactions %}
-            {% for tx in today_transactions %}
-            <div class="tx-row">
-                <div class="d-flex align-items-center gap-2">
-                    <span style="font-size:1.2rem;">{{ tx.category.icon_emoji }}</span>
-                    <span class="small fw-semibold">{{ tx.category.name }}</span>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <div class="text-end">
-                        <span class="fw-bold text-danger">{{ tx.amount|floatformat:2 }} EGP</span>
-                        <div class="text-muted" style="font-size:.75rem;">{{ tx.timestamp|time:"H:i" }}</div>
-                    </div>
-                    <form method="POST" action="{% url 'delete_transaction' tx.id %}"
-                          onsubmit="return confirm('هتمسح المصروف ده؟')">
-                        {% csrf_token %}
-                        <button type="submit" class="btn-delete-tx" title="حذف">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </form>
-                </div>
-            </div>
+  <div class="col-md-7">
+    <div class="card p-4 mb-4">
+      <h6 class="mb-3" style="color:#4a5568;font-weight:600;font-size:.9rem;">
+        <i class="bi bi-pencil-square me-2" style="color:#1D5D74;"></i>Record Expense
+      </h6>
+      <form method="post" action="/record/" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="cycle_id" value="{{ cycle.id }}">
+        <div class="mb-4">
+          <label class="form-label fw-semibold text-muted" style="font-size:.82rem;">Amount (EGP)</label>
+          <input type="number" name="amount" step="0.01" min="0.01"
+                 class="form-control form-control-lg" style="border-radius:8px;"
+                 placeholder="0.00" value="{{ form.amount.value|default:'' }}"
+                 required autofocus>
+          {% if form.amount.errors %}
+            {% for err in form.amount.errors %}
+              <div style="color:#e53e3e;font-size:.8rem;margin-top:4px;">{{ err }}</div>
             {% endfor %}
-            {% else %}
-            <div class="text-center text-muted py-4">
-                <i class="bi bi-inbox fs-3 d-block mb-2"></i>No transactions today
-            </div>
-            {% endif %}
+          {% endif %}
         </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold text-muted" style="font-size:.82rem;">Category</label>
+          <div class="row g-2">
+            {% for cat in categories %}
+            <div class="col-4 col-sm-3">
+              <label class="cat-chip w-100">
+                <input type="radio" name="category_id" value="{{ cat.id }}"
+                  {% if form.category_id.value == cat.id|stringformat:'s' %}checked{% endif %} required>
+                <div class="chip-inner">
+                  <span style="font-size:1.5rem;">{{ cat.icon_emoji }}</span>
+                  <span class="small fw-semibold">{{ cat.name }}</span>
+                </div>
+              </label>
+            </div>
+            {% empty %}
+            <p class="text-muted small">No categories — add them from Admin.</p>
+            {% endfor %}
+          </div>
+        </div>
+        <button type="submit" class="btn-save">
+          <i class="bi bi-check-circle me-2"></i>Save Transaction
+        </button>
+      </form>
     </div>
+  </div>
+
+  <div class="col-md-5">
+    <div class="card p-3">
+      <h6 class="mb-3" style="color:#4a5568;font-weight:600;font-size:.9rem;">
+        <i class="bi bi-list-ul me-2" style="color:#1D5D74;"></i>Today
+        <span class="badge ms-1" style="background:#f3f4f6;color:#6b7280;font-weight:500;">{{ today_transactions|length }}</span>
+      </h6>
+      {% if today_transactions %}
+        {% for tx in today_transactions %}
+        <div class="tx-row">
+          <div class="d-flex align-items-center gap-2">
+            <span style="font-size:1.15rem;">{{ tx.category.icon_emoji }}</span>
+            <span class="small fw-semibold" style="color:#374151;">{{ tx.category.name }}</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <div class="text-end">
+              <div style="font-weight:700;color:#c53030;font-size:.9rem;">{{ tx.amount|floatformat:2 }} EGP</div>
+              <div style="font-size:.7rem;color:#9ca3af;">{{ tx.timestamp|time:"H:i" }}</div>
+            </div>
+            <form method="POST" action="{% url 'delete_transaction' tx.id %}"
+                  onsubmit="return confirm('Remove this transaction?')">
+              {% csrf_token %}
+              <button type="submit" class="btn-del" title="Remove">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="text-center py-5" style="color:#c9d0d8;">
+          <i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
+          <span style="font-size:.82rem;">No transactions today</span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
+
+{% endif %}{# end cycle #}
+
+
+{% block extra_js %}
+<script>
+/* ─────────────────────────────────────────
+   Setup form (no cycle)
+───────────────────────────────────────── */
+let setupMode = 'days';
+
+function setMode(m) {
+  setupMode = m;
+  document.getElementById('daysSection').style.display = m === 'days' ? '' : 'none';
+  document.getElementById('dateSection').style.display = m === 'date' ? '' : 'none';
+  document.getElementById('btnDays').className = m === 'days' ? 'active' : '';
+  document.getElementById('btnDate').className = m === 'date' ? 'active' : '';
+  calcPreview('setup');
+}
+
+/* ─────────────────────────────────────────
+   Edit form
+───────────────────────────────────────── */
+let editMode = 'days';
+
+function setEditMode(m) {
+  editMode = m;
+  document.getElementById('eDaysSection').style.display = m === 'days' ? '' : 'none';
+  document.getElementById('eDateSection').style.display = m === 'date' ? '' : 'none';
+  document.getElementById('eBtnDays').className = m === 'days' ? 'active' : '';
+  document.getElementById('eBtnDate').className = m === 'date' ? 'active' : '';
+  calcPreview('edit');
+}
+
+/* ─────────────────────────────────────────
+   Preview pills calculation
+───────────────────────────────────────── */
+function calcPreview(form) {
+  const isSetup = form === 'setup';
+  const budget  = parseFloat(document.getElementById(isSetup ? 'setupBudget' : 'editBudget')?.value);
+  const mode    = isSetup ? setupMode : editMode;
+  const today   = new Date();
+  let days = null, endDate = null;
+
+  if (mode === 'days') {
+    days = parseInt(document.getElementById(isSetup ? 'setupDays' : 'editDays')?.value);
+    if (days > 0) {
+      endDate = new Date(today);
+      endDate.setDate(endDate.getDate() + days - 1); // ✅ inclusive
+    }
+  } else {
+    const raw = document.getElementById(isSetup ? 'setupEndDate' : 'editEndDate')?.value;
+    if (raw) {
+      endDate = new Date(raw + 'T00:00:00');
+      days    = Math.round((endDate - today) / 86400000) + 1;
+    }
+  }
+
+  const prefix  = isSetup ? '' : 'e';
+  const preview = document.getElementById(isSetup ? 'setupPreview' : 'editPreview');
+
+  if (preview && budget > 0 && days > 0 && endDate) {
+    document.getElementById(prefix + 'pvDaily').textContent = (budget / days).toFixed(2) + ' EGP';
+    document.getElementById(prefix + 'pvDays').textContent  = days + ' days';
+    document.getElementById(prefix + 'pvEnd').textContent   =
+      endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    preview.classList.add('show');
+  } else if (preview) {
+    preview.classList.remove('show');
+  }
+}
+
+/* Wire up input listeners */
+['setupBudget','setupDays','setupEndDate'].forEach(function(id) {
+  document.getElementById(id)?.addEventListener('input', function() { calcPreview('setup'); });
+});
+['editBudget','editDays','editEndDate'].forEach(function(id) {
+  document.getElementById(id)?.addEventListener('input', function() { calcPreview('edit'); });
+});
+
+/* ─────────────────────────────────────────
+   Toggle Edit / Reset cards
+───────────────────────────────────────── */
+function toggleEdit() {
+  const card   = document.getElementById('editCard');
+  const reset  = document.getElementById('resetCard');
+  const banner = document.getElementById('cycleBanner');
+  if (!card) return;
+  const open = card.style.display === 'none';
+  card.style.display   = open ? '' : 'none';
+  if (reset) reset.style.display = 'none';
+  if (banner) banner.style.opacity = open ? '0.55' : '1';
+}
+
+function toggleReset() {
+  const card   = document.getElementById('resetCard');
+  const edit   = document.getElementById('editCard');
+  const banner = document.getElementById('cycleBanner');
+  if (!card) return;
+  const open = card.style.display === 'none';
+  card.style.display   = open ? '' : 'none';
+  if (edit) edit.style.display = 'none';
+  if (banner) banner.style.opacity = open ? '0.55' : '1';
+}
+
+/* ─────────────────────────────────────────
+   Donut chart animation
+───────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+  const arc = document.getElementById('donutArc');
+  if (!arc) return;
+  const daysLeft  = {{ days_left|default:0 }};
+  const totalDays = Math.max({{ total_days|default:1 }}, 1);
+  const circ = 2 * Math.PI * 26;
+  const pct  = Math.min(daysLeft / totalDays, 1);
+  arc.setAttribute('stroke-dasharray',  (pct * circ).toFixed(2) + ' ' + circ.toFixed(2));
+  arc.setAttribute('stroke-dashoffset', '0');
+});
+</script>
+{% endblock %}
+
 {% endblock %}

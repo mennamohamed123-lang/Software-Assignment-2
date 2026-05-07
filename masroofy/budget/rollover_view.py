@@ -58,13 +58,13 @@ class RolloverView:
         try:
             cycle = BudgetCycle.objects.get(pk=cycle_id, is_active=True)
         except BudgetCycle.DoesNotExist:
-            return self._result("error", f"مفيش دورة نشطة بـ id={cycle_id}", 0, 0)
+            return self._result("error", f"No active cycle found with id={cycle_id}", 0, 0)
 
         # Check from_date is inside the cycle range
         if not (cycle.start_date <= from_date <= cycle.end_date):
             return self._result(
                 "skipped",
-                f"يوم {from_date} مش جوه الدورة ({cycle.start_date} → {cycle.end_date})",
+                f"Date {from_date} is outside the cycle ({cycle.start_date} → {cycle.end_date})",
                 0,
                 cycle.safe_daily_limit,
             )
@@ -77,7 +77,7 @@ class RolloverView:
             # (no surplus, no deficit to carry)
             return self._result(
                 "skipped",
-                f"مفيش سجل ليوم {from_date}، مفيش إيه يتنقل",
+                f"No record found for {from_date}, nothing to roll over",
                 0,
                 cycle.safe_daily_limit,
             )
@@ -90,7 +90,7 @@ class RolloverView:
         if carried_over == 0:
             return self._result(
                 "skipped",
-                f"يوم {from_date} صرف بالظبط الحد — مفيش باقي ينقل",
+                f"Day {from_date} spent exactly the limit — nothing to carry over",
                 0,
                 cycle.safe_daily_limit,
             )
@@ -112,12 +112,12 @@ class RolloverView:
             tomorrow_rec.allocated_limit = new_limit
             tomorrow_rec.save(update_fields=["allocated_limit"])
 
-        direction = "فائض" if carried_over > 0 else "عجز"
+        direction = "surplus" if carried_over > 0 else "deficit"
         sign      = "+" if carried_over > 0 else ""
         return self._result(
             "ok",
-            f"✅ تم نقل {direction} {sign}{carried_over:.2f} جنيه من {from_date} إلى {to_date}. "
-            f"حد بكره: {new_limit:.2f} جنيه",
+            f"✅ Carried over {direction} {sign}{carried_over:.2f} EGP from {from_date} to {to_date}. "
+            f"Tomorrow's limit: {new_limit:.2f} EGP",
             carried_over,
             new_limit,
         )
@@ -133,7 +133,7 @@ class RolloverView:
         try:
             cycle = BudgetCycle.objects.get(pk=cycle_id, is_active=True)
         except BudgetCycle.DoesNotExist:
-            return [self._result("error", f"مفيش دورة نشطة بـ id={cycle_id}", 0, 0)]
+            return [self._result("error", f"No active cycle found with id={cycle_id}", 0, 0)]
 
         today = timezone.now().date()
         results = []
@@ -147,7 +147,7 @@ class RolloverView:
         )
 
         if not recorded_dates:
-            return [self._result("skipped", "مفيش أيام سابقة تستاهل نقل", 0, cycle.safe_daily_limit)]
+            return [self._result("skipped", "No previous days to roll over", 0, cycle.safe_daily_limit)]
 
         for i in range(len(recorded_dates) - 1):
             from_d = recorded_dates[i]
@@ -165,6 +165,17 @@ class RolloverView:
 
     @staticmethod
     def _result(status, message, carried_over, new_daily_limit) -> dict:
+        """Creates a result dictionary for rollover operations.
+
+        Args:
+            status: The status of the operation.
+            message: A descriptive message.
+            carried_over: The amount carried over.
+            new_daily_limit: The new daily limit.
+
+        Returns:
+            A dictionary with the result details.
+        """
         return {
             "status": status,
             "message": message,

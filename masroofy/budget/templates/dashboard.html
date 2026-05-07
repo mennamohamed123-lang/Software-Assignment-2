@@ -1,101 +1,170 @@
 {% extends "base.html" %}
-{% block active_dashboard %}active-link{% endblock %}
+{% block title %}Dashboard — Masroofy{% endblock %}
+
+{% block extra_css %}
+<style>
+.kpi-card {
+    border-radius: 14px;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+.kpi-card .kpi-label {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    opacity: .75;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+.kpi-card .kpi-value {
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.kpi-card .kpi-icon {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2rem;
+    opacity: .18;
+}
+.section-title {
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #6b7a8d;
+    margin-bottom: 12px;
+}
+.activity-table th {
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #6b7a8d;
+    border-bottom: 1.5px solid #e4eaee;
+    padding-bottom: 10px;
+}
+.activity-table td {
+    padding: 11px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: .87rem;
+    vertical-align: middle;
+}
+.activity-table tr:last-child td { border-bottom: none; }
+.badge-cat {
+    background: #e8f4f8;
+    color: #1D5D74;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: .78rem;
+    font-weight: 600;
+}
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 22px;
+}
+.page-header h3 {
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: #1e2d3d;
+    margin: 0;
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-3">
 
-    <!-- 🔥 Header + Button -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-
-        <h3 class="fw-bold mb-0">
-             Dashboard
-            {% if is_final_day %}
-                <span class="badge bg-danger ms-2">🚨 Final Day</span>
-            {% endif %}
-        </h3>
-
-        <!-- ✅ زرار Log Expense -->
-        <a href="{% url 'record_expense' %}" class="btn btn-success rounded-pill px-4">
-            + Log Expense
-        </a>
-
-    </div>
-
-    <!-- 🔥 Alert -->
-    {% if show_80_alert %}
-    <div class="alert alert-danger">
-        Warning: You have used {{ spent_percentage }}% of your budget!
-    </div>
-    {% endif %}
-
-    {% if error %}
-        <div class="alert alert-danger">{{ error }}</div>
-    {% else %}
-
-    <!-- 🔥 KPI CARDS -->
-    <div class="row g-3">
-
-        <div class="col-md-3">
-            <div class="card bg-primary text-white p-3">
-                <small>Total</small>
-                <h5>{{ total }}</h5>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card bg-danger text-white p-3">
-                <small>Spent</small>
-                <h5>{{ spent }}</h5>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card bg-success text-white p-3">
-                <small>Remaining</small>
-                <h5>{{ remaining }}</h5>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card text-white p-3 {% if budget_is_tight %}bg-warning{% else %}bg-dark{% endif %}">
-                <small>Daily Limit</small>
-                <h5>{{ daily_limit|floatformat:2 }}</h5>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- 🔥 Latest Activity -->
-    <div class="card mt-4 p-3">
-        <h6 class="text-muted">Latest Activity</h6>
-
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Category</th>
-                    <th>Amount</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in latest %}
-                <tr>
-                    <td>{{ t.category.name }}</td>
-                    <td>{{ t.amount }}</td>
-                    <td>{{ t.timestamp|date:"Y-m-d" }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="3" class="text-center text-muted">
-                        No activity yet
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    {% endif %}
-
+<div class="page-header">
+    <h3>
+        Dashboard
+        {% if is_final_day %}
+            <span class="badge bg-danger ms-2" style="font-size:.65rem;">🚨 Final Day</span>
+        {% endif %}
+    </h3>
+    <a href="{% url 'record_expense' %}" class="btn btn-primary rounded-pill px-4">
+        <i class="bi bi-plus-lg me-1"></i> Log Expense
+    </a>
 </div>
+
+{% if show_80_alert %}
+<div class="alert alert-danger mb-3" style="border-radius:10px;border:none;border-left:4px solid #dc3545;">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>Warning:</strong> You have used {{ spent_percentage }}% of your budget!
+</div>
+{% endif %}
+
+{% if error %}
+    <div class="alert alert-danger" style="border-radius:10px;">{{ error }}</div>
+{% else %}
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="kpi-card" style="background:linear-gradient(135deg,#1D5D74,#164e63);color:#fff;">
+            <div class="kpi-label">Total Budget</div>
+            <div class="kpi-value">{{ total }}</div>
+            <span class="kpi-icon">💰</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card" style="background:linear-gradient(135deg,#D66D55,#c25640);color:#fff;">
+            <div class="kpi-label">Spent</div>
+            <div class="kpi-value">{{ spent }}</div>
+            <span class="kpi-icon">📤</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card" style="background:linear-gradient(135deg,#28a745,#1e8035);color:#fff;">
+            <div class="kpi-label">Remaining</div>
+            <div class="kpi-value">{{ remaining }}</div>
+            <span class="kpi-icon">💚</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card {% if budget_is_tight %}bg-warning{% else %}bg-white{% endif %}" style="border:1.5px solid #e4eaee;">
+            <div class="kpi-label" style="color:#6b7a8d;">Daily Limit</div>
+            <div class="kpi-value" style="color:#1e2d3d;">{{ daily_limit|floatformat:2 }}</div>
+            <span class="kpi-icon" style="opacity:.12;">📅</span>
+        </div>
+    </div>
+</div>
+
+<!-- Latest Activity -->
+<div class="card p-4">
+    <div class="section-title"><i class="bi bi-clock-history me-1"></i> Latest Activity</div>
+    <table class="table table-borderless activity-table mb-0">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in latest %}
+            <tr>
+                <td><span class="badge-cat">{{ t.category.name }}</span></td>
+                <td class="fw-bold text-danger">{{ t.amount }} EGP</td>
+                <td class="text-muted">{{ t.timestamp|date:"M d, Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center text-muted py-5">
+                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                    No activity yet — start by logging an expense!
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endif %}
 {% endblock %}

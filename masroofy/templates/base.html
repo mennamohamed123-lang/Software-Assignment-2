@@ -5,286 +5,572 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Masroofy{% endblock %}</title>
 
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-    <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-
-    <!-- Chart.js -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    {% block extra_css %}{% endblock %}
+
     <style>
+        /* =====================================================
+           ROOT VARIABLES
+        ===================================================== */
+        :root {
+            --teal:      #1D5D74;
+            --teal-dk:   #164e63;
+            --coral:     #D66D55;
+            --mint:      #6ee7c7;
+            --bg:        #f0f4f7;
+            --surface:   #ffffff;
+            --text:      #1e2d3d;
+            --muted:     #6b7a8d;
+            --border:    #e4eaee;
+            --sh-sm:     0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
+            --sh-md:     0 4px 20px rgba(0,0,0,0.1);
+            --radius:    12px;
+            --sb-w:      215px;
+            --bar-h:     58px;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #f8f9fa;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
         }
 
-        /* ================= NAVBAR (Guests Only) ================= */
+        /* =====================================================
+           GUEST NAVBAR
+        ===================================================== */
         .navbar {
-            background: #1D5D74;
+            background: var(--teal);
+            padding: 0 32px;
+            height: var(--bar-h);
+            box-shadow: var(--sh-md);
         }
 
-        .navbar a {
-            color: white !important;
+        .navbar-brand {
+            color: #fff !important;
+            font-weight: 700 !important;
+            font-size: 1.05rem !important;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             text-decoration: none;
         }
 
+        .navbar .nav-link {
+            color: rgba(255,255,255,0.82) !important;
+            font-size: .88rem;
+            font-weight: 500;
+            padding: 7px 13px !important;
+            border-radius: 7px;
+            transition: all .15s;
+        }
+
+        .navbar .nav-link:hover {
+            color: #fff !important;
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* "Get Started" pill — زي الصورة */
         .btn-main {
-            background: #1D5D74;
-            color: white;
-            border-radius: 30px;
-            padding: 8px 18px;
-            border: 2px solid white;
-            transition: 0.3s;
+            color: #fff !important;
+            border: 1.5px solid rgba(255,255,255,0.7) !important;
+            border-radius: 20px !important;
+            padding: 6px 18px !important;
+            font-size: .85rem !important;
+            font-weight: 500 !important;
+            text-decoration: none;
+            transition: all .18s !important;
+            white-space: nowrap;
         }
 
         .btn-main:hover {
-            background: #ff8c00;
-            border-color: #ff8c00;
-            transform: scale(1.05);
+            background: rgba(255,255,255,0.15) !important;
+            border-color: #fff !important;
         }
 
-        /* ================= SIDEBAR (Authenticated Only) ================= */
-        .sidebar {
-            background-color: #1D5D74;
-            min-height: 100vh;
-            padding: 20px 0;
-            position: fixed;
-            width: 16.666%;
-            top: 0;
-            left: 0;
-            z-index: 100;
+        /* Hamburger */
+        .navbar-toggler {
+            border-color: rgba(255,255,255,0.45) !important;
+            border-radius: 7px !important;
+            padding: 5px 9px;
         }
 
-        .sidebar a {
-            color: #ffffffcc;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            border-radius: 12px;
-            margin: 6px 10px;
-            transition: 0.2s ease;
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba(255,255,255,1)' stroke-width='2.5' stroke-linecap='round' d='M4 8h24M4 16h24M4 24h24'/%3E%3C/svg%3E") !important;
         }
 
-        .sidebar a:hover {
-            background-color: #D66D55;
-            color: white;
+        @media (max-width: 991px) {
+            .navbar { padding: 0 16px; }
+            .navbar-collapse {
+                background: var(--teal-dk);
+                border-radius: 0 0 10px 10px;
+                padding: 10px 14px 14px;
+                margin-top: 6px;
+            }
+            .navbar-collapse .nav-link,
+            .navbar-collapse .btn-main { display: block !important; text-align: center; margin: 3px 0; }
         }
 
-        .active-link {
-            background-color: #d35d47;
-            color: white !important;
-            border-radius: 12px;
-        }
-
-        .sidebar .brand {
-            color: white;
-            font-size: 1.4rem;
-            font-weight: bold;
-            padding: 10px 20px 30px;
-        }
-
-        /* ================= MAIN CONTENT (Authenticated) ================= */
-        .main-content {
-            margin-left: 16.666%;
-            padding: 25px;
-        }
-
-        /* ================= TOP BAR ================= */
-        .topbar {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .user-box {
-            background: white;
-            padding: 8px 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-
-        .user-box span {
-            margin-right: 10px;
-            font-weight: 500;
-        }
-
-        /* ================= CARDS ================= */
-        .card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        }
-
-        .btn-primary {
-            background-color: #1D5D74;
-            border-color: #1D5D74;
-        }
-
-        .btn-primary:hover {
-            background-color: #D66D55;
-            border-color: #D66D55;
-        }
-
-        /* ================= AUTH PAGES ================= */
+        /* =====================================================
+           AUTH PAGES
+        ===================================================== */
         body.auth-page {
-            padding-top: 70px;
+            padding-top: var(--bar-h);
+            background: #f5f7f9;
         }
 
         .auth-wrapper {
-            min-height: calc(100vh - 70px);
+            min-height: calc(100vh - var(--bar-h));
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 28px 16px;
         }
 
         .auth-card {
             width: 100%;
-            max-width: 420px;
-            background: white;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 400px;
+            background: var(--surface);
+            padding: 36px 32px;
+            border-radius: 14px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
         }
 
-        /* ================= MOBILE NAVBAR CENTERING ================= */
+        .auth-card h3 {
+            font-weight: 600;
+            font-size: 1.35rem;
+            color: var(--text);
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .auth-card .form-control {
+            border: 1px solid #c8d0d8;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: .9rem;
+            transition: border-color .18s, box-shadow .18s;
+        }
+
+        .auth-card .form-control:focus {
+            border-color: var(--teal);
+            box-shadow: 0 0 0 3px rgba(29,93,116,0.1);
+        }
+
+        .btn-auth {
+            width: 100%;
+            background: var(--teal);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 11px;
+            font-size: .92rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .18s;
+        }
+
+        .btn-auth:hover { background: var(--teal-dk); }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 16px;
+            font-size: .85rem;
+            color: var(--muted);
+        }
+
+        .auth-footer a {
+            color: var(--teal);
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        /* =====================================================
+           SIDEBAR — بالظبط زي الصورة
+        ===================================================== */
+        .sidebar {
+            background: linear-gradient(180deg, var(--teal) 0%, var(--teal-dk) 100%);
+            width: var(--sb-w);
+            min-height: 100vh;
+            position: fixed;
+            top: 0; left: 0;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 16px rgba(0,0,0,0.12);
+            transition: transform .3s ease;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Brand — "Masroofy / BUDGET TRACKER" زي الصورة */
+        .sb-brand {
+            padding: 20px 18px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .sb-brand-icon {
+            width: 38px; height: 38px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .sb-brand-name {
+            color: #fff;
+            font-size: 1.08rem;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -.01em;
+        }
+
+        .sb-brand-sub {
+            color: rgba(255,255,255,0.38);
+            font-size: .58rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            display: block;
+            margin-top: 2px;
+        }
+
+        /* Section labels — "MAIN" / "INSIGHTS" زي الصورة */
+        .sb-section {
+            font-size: .6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: rgba(255,255,255,0.28);
+            padding: 16px 20px 5px;
+        }
+
+        /* Nav links — زي الصورة بالظبط */
+        .sidebar a {
+            position: relative;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 10px 16px;
+            border-radius: 9px;
+            margin: 1px 10px;
+            font-size: .87rem;
+            font-weight: 500;
+            transition: all .15s;
+        }
+
+        .sidebar a i {
+            font-size: .95rem;
+            width: 19px;
+            text-align: center;
+            flex-shrink: 0;
+            opacity: .7;
+        }
+
+        .sidebar a:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .sidebar a:hover i { opacity: 1; }
+
+        /* Active — mint indicator bar زي الصورة */
+        .active-link {
+            background: rgba(255,255,255,0.12) !important;
+            color: #fff !important;
+            font-weight: 600 !important;
+        }
+
+        .active-link i { opacity: 1 !important; }
+
+        /* الخط الأخضر على اليسار زي الصورة */
+        .active-link::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    width: 3px;
+    height: 18px;
+    background: var(--mint);
+    border-radius: 2px;
+}
+        /* Bottom slot — Budget Settings + Logout */
+        .sb-bottom {
+            margin-top: auto;
+            padding: 6px 10px 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .sb-bottom a {
+            color: rgba(255,255,255,0.4) !important;
+            font-size: .84rem !important;
+        }
+
+        .sb-bottom a:hover {
+            color: rgba(255,255,255,0.8) !important;
+            background: rgba(255,255,255,0.07) !important;
+        }
+
+        /* =====================================================
+           MAIN CONTENT
+        ===================================================== */
+        .main-content {
+            margin-left: var(--sb-w);
+            padding: 28px 30px;
+            min-height: 100vh;
+            background: var(--bg);
+        }
+
+        /* Topbar (desktop) */
+        .topbar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .user-box {
+            background: var(--surface);
+            padding: 8px 16px;
+            border-radius: 10px;
+            box-shadow: var(--sh-sm);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-box span {
+            font-weight: 500;
+            font-size: .87rem;
+        }
+
+        /* Global cards & buttons */
+        .card {
+            border: none;
+            border-radius: var(--radius);
+            box-shadow: var(--sh-sm);
+        }
+
+        .btn-primary {
+            background-color: var(--teal);
+            border-color: var(--teal);
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: var(--coral);
+            border-color: var(--coral);
+        }
+
+        /* =====================================================
+           MOBILE TOPBAR
+        ===================================================== */
+        .mobile-topbar {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: var(--bar-h);
+            background: var(--teal);
+            z-index: 150;
+            align-items: center;
+            padding: 0 18px;
+            box-shadow: var(--sh-md);
+        }
+
+        .mobile-topbar .m-brand {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex; align-items: center; gap: 8px;
+            text-decoration: none;
+        }
+
+        .hamburger-btn {
+            background: none;
+            border: 1.5px solid rgba(255,255,255,0.4);
+            border-radius: 7px;
+            color: #fff;
+            padding: 6px 10px;
+            cursor: pointer;
+            margin-left: auto;
+            font-size: .95rem;
+            line-height: 1;
+            transition: background .15s;
+        }
+
+        .hamburger-btn:hover { background: rgba(255,255,255,0.1); }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 190;
+        }
+
+        .sidebar-overlay.active { display: block; }
+
+        /* =====================================================
+           RESPONSIVE
+        ===================================================== */
         @media (max-width: 991px) {
-            .navbar-collapse .navbar-nav {
-                text-align: center;
-                margin: 0 auto !important;
-            }
-
-            .navbar-collapse .nav-item {
-                width: 100%;
-            }
-
-            .navbar-collapse .nav-link {
-                justify-content: center;
-                display: flex;
-            }
-
-            .navbar-collapse .btn-main {
-                display: inline-block;
-                margin-top: 5px;
-            }
+            .sidebar      { transform: translateX(calc(-1 * var(--sb-w))); }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-content { margin-left: 0; padding-top: calc(var(--bar-h) + 20px); }
+            .mobile-topbar { display: flex; }
         }
 
-        /* ================= MOBILE SIDEBAR ================= */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 220px;
-                left: -220px;
-                transition: left 0.3s ease;
-            }
-
-            .sidebar.active {
-                left: 0;
-            }
-
-            .main-content {
-                margin-left: 0;
-                width: 100%;
-            }
+        @media (max-width: 575px) {
+            .main-content { padding: calc(var(--bar-h) + 14px) 14px 28px; }
+            .auth-card    { padding: 28px 20px; }
         }
-        /* Navbar toggler border */
-.navbar-toggler {
-    border-color: rgba(255, 255, 255, 0.5) !important;
-}
-
-/* Hamburger icon (white + shadow) */
-.navbar-toggler-icon {
-    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba(255,255,255,1)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 8h24M4 16h24M4 24h24'/%3E%3C/svg%3E") !important;
-    
-     
-}
     </style>
 </head>
 
 <body class="{% if not user.is_authenticated %}auth-page{% endif %}">
 
-<!-- ================= NAVBAR — يظهر فقط للـ Guests ================= -->
-{% if not user.is_authenticated %}
-<nav class="navbar navbar-expand-lg fixed-top px-5">
 
-    <a class="navbar-brand fw-bold text-white" href="{% url 'home' %}">
+<!-- =====================================================
+     NAVBAR — Guests only
+===================================================== -->
+{% if not user.is_authenticated %}
+<nav class="navbar navbar-expand-lg fixed-top">
+
+    <a class="navbar-brand" href="{% url 'home' %}">
         <i class="bi bi-wallet2"></i> Masroofy
     </a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+    <button class="navbar-toggler ms-auto" type="button"
+            data-bs-toggle="collapse" data-bs-target="#nav">
         <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="nav">
-        <ul class="navbar-nav ms-auto">
-
+        <ul class="navbar-nav ms-auto align-items-center gap-1">
             <li class="nav-item">
-                <a class="nav-link text-white" href="{% url 'home' %}">Home</a>
+                <a class="nav-link" href="{% url 'home' %}">Home</a>
             </li>
-
             <li class="nav-item">
-                <a class="nav-link text-white" href="{% url 'login' %}">Login</a>
+                <a class="nav-link" href="{% url 'login' %}">Login</a>
             </li>
-
-            <li class="nav-item ms-lg-3">
-                <a href="{% url 'signup' %}" class="btn btn-main">
-                    Get Started
-                </a>
+            <li class="nav-item ms-lg-2">
+                <a href="{% url 'signup' %}" class="nav-link btn-main">Get Started</a>
             </li>
-
         </ul>
     </div>
 </nav>
 {% endif %}
 
 
-<!-- ================= LAYOUT ================= -->
-<div class="container-fluid">
-    <div class="row">
+<!-- =====================================================
+     LAYOUT
+===================================================== -->
+<div class="container-fluid p-0">
+    <div class="row g-0">
 
-        <!-- ================= SIDEBAR — يظهر فقط للـ Authenticated ================= -->
+        <!-- SIDEBAR — Authenticated only -->
         {% if user.is_authenticated %}
-        <div class="col-md-2 sidebar p-0">
 
-            <div class="brand">
+        <!-- Mobile topbar -->
+        <div class="mobile-topbar" id="mobileTopbar">
+            <a href="/record/" class="m-brand">
                 <i class="bi bi-wallet2"></i> Masroofy
+            </a>
+            <button class="hamburger-btn" onclick="toggleSidebar()">
+                <i class="bi bi-list" id="hamIcon"></i>
+            </button>
+        </div>
+
+        <!-- Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar p-0" id="appSidebar">
+
+            <!-- Brand — زي الصورة: icon box + Masroofy + BUDGET TRACKER -->
+            <a href="/record/" class="sb-brand">
+                <div class="sb-brand-icon">
+                    <i class="bi bi-wallet2" style="color:#7ecde4;"></i>
+                </div>
+                <div>
+                    <div class="sb-brand-name">Masroofy</div>
+                    <span class="sb-brand-sub">Budget Tracker</span>
+                </div>
+            </a>
+
+            <!-- MAIN section -->
+            <div class="sb-section">Main</div>
+
+            <a href="/record/"
+               class="{% if request.path == '/record/' %}active-link{% endif %}">
+                <i class="bi bi-plus-circle"></i>
+                <span>New Expense</span>
+            </a>
+
+            <a href="/dashboard/"
+               class="{% if request.path == '/dashboard/' %}active-link{% endif %}">
+                <i class="bi bi-grid-1x2"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="/history/"
+               class="{% if request.path == '/history/' %}active-link{% endif %}">
+                <i class="bi bi-clock-history"></i>
+                <span>History</span>
+            </a>
+
+            <!-- INSIGHTS section -->
+            <div class="sb-section">Insights</div>
+
+            <a href="/stats/"
+               class="{% if request.path == '/stats/' %}active-link{% endif %}">
+                <i class="bi bi-bar-chart-line"></i>
+                <span>Stats</span>
+            </a>
+
+            <a href="/notifications/check/"
+               class="{% if request.path == '/notifications/check/' %}active-link{% endif %}">
+                <i class="bi bi-bell"></i>
+                <span>Notifications</span>
+            </a>
+
+            <!-- Bottom: Settings + Logout -->
+            <div class="sb-bottom">
+                <a href="/setup/"
+                   class="{% if request.path == '/setup/' %}active-link{% endif %}">
+                    <i class="bi bi-gear"></i>
+                    <span>Budget Settings</span>
+                </a>
+                <a href="{% url 'logout' %}">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Logout</span>
+                </a>
             </div>
 
-            <a href="/history/" class="{% if request.path == '/history/' %}active-link{% endif %}">
-                <i class="bi bi-clock-history me-2"></i> History
-            </a>
-
-            <a href="/record/" class="{% if request.path == '/record/' %}active-link{% endif %}">
-                <i class="bi bi-plus-circle me-2"></i> New Expense
-            </a>
-
-            <a href="/dashboard/" class="{% if request.path == '/dashboard/' %}active-link{% endif %}">
-                <i class="bi bi-speedometer2 me-2"></i> Dashboard
-            </a>
-
-            <a href="/stats/" class="{% if request.path == '/stats/' %}active-link{% endif %}">
-                <i class="bi bi-bar-chart me-2"></i> Stats
-            </a>
-
-            <a href="/notifications/check/" class="{% if request.path == '/notifications/check/' %}active-link{% endif %}">
-                <i class="bi bi-bell me-2"></i> Notifications
-            </a>
-
-        </div>
+        </aside>
         {% endif %}
 
-        <!-- ================= MAIN CONTENT ================= -->
-        <div class="{% if user.is_authenticated %}col-md-10 main-content{% else %}col-12{% endif %}">
-
-            <!-- Top Bar (للمستخدم المسجّل فقط) -->
+        <!-- MAIN CONTENT -->
+<div class="{% if user.is_authenticated %}col main-content{% else %}col-12{% endif %}">
+            <!-- Topbar (desktop only) -->
             {% if user.is_authenticated %}
-            <div class="topbar">
+            <div class="topbar d-none d-lg-flex">
                 <div class="user-box">
                     <span>👋 {{ user.username }}</span>
-                    <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">
+                    <a href="{% url 'logout' %}" class="btn btn-danger btn-sm"
+                       style="border-radius:6px; font-size:.82rem;">
                         Logout
                     </a>
                 </div>
@@ -298,7 +584,36 @@
     </div>
 </div>
 
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function toggleSidebar() {
+        const s = document.getElementById('appSidebar');
+        const o = document.getElementById('sidebarOverlay');
+        const i = document.getElementById('hamIcon');
+        if (!s) return;
+        const open = s.classList.toggle('mobile-open');
+        o.classList.toggle('active', open);
+        i.className = open ? 'bi bi-x-lg' : 'bi bi-list';
+    }
+
+    function closeSidebar() {
+        const s = document.getElementById('appSidebar');
+        const o = document.getElementById('sidebarOverlay');
+        const i = document.getElementById('hamIcon');
+        if (!s) return;
+        s.classList.remove('mobile-open');
+        o.classList.remove('active');
+        i.className = 'bi bi-list';
+    }
+
+    document.querySelectorAll('.sidebar a').forEach(function(l) {
+        l.addEventListener('click', function() {
+            if (window.innerWidth < 992) closeSidebar();
+        });
+    });
+</script>
 
 {% block extra_js %}{% endblock %}
 

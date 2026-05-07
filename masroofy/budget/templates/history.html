@@ -1,151 +1,176 @@
 {% extends 'base.html' %}
-
-{% block title %}Expense History - Masroofy{% endblock %}
-
-{% block active_history %}active{% endblock %}
+{% block title %}Expense History — Masroofy{% endblock %}
 
 {% block extra_css %}
 <style>
-    .stat-card { border-left: 4px solid #1D5D74; }
-    .table thead { background-color: #1D5D74; color: white; }
-    .badge-category {
-        background-color: #e8f4f8;
-        color: #1D5D74;
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-    }
+.stat-card { border-left: 4px solid #1D5D74; border-radius: 12px; }
+.stat-card.coral { border-left-color: #D66D55; }
+.stat-card.green { border-left-color: #28a745; }
+.stat-card .s-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:#6b7a8d; font-weight:600; margin-bottom:6px; }
+.stat-card .s-val { font-size:1.65rem; font-weight:800; color:#1e2d3d; line-height:1; }
+
+.table thead th {
+    background: #1D5D74;
+    color: white;
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    border: none;
+    padding: 12px 16px;
+}
+.table thead th:first-child { border-radius: 10px 0 0 0; }
+.table thead th:last-child { border-radius: 0 10px 0 0; }
+.table tbody td { padding: 13px 16px; vertical-align: middle; border-bottom: 1px solid #f3f4f6; font-size: .87rem; }
+.table tbody tr:last-child td { border-bottom: none; }
+.table tbody tr:hover td { background: #f8fafc; }
+
+.badge-category {
+    background: #e8f4f8;
+    color: #1D5D74;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: .8rem;
+    font-weight: 600;
+}
+.filter-card { background: #fff; border-radius: 14px; padding: 20px 22px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 20px; }
+.filter-card label { font-size: .78rem; font-weight: 600; color: #4a5568; margin-bottom: 5px; }
+.form-control, .form-select { border-radius: 9px; border: 1.5px solid #e4eaee; font-size:.87rem; padding: 9px 12px; }
+.form-control:focus, .form-select:focus { border-color: #1D5D74; box-shadow: 0 0 0 3px rgba(29,93,116,0.1); }
+.page-title { font-weight: 800; font-size: 1.35rem; color: #1e2d3d; margin-bottom: 20px; }
+.alert-banner {
+    border: none;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.alert-banner h6 { margin: 0; font-weight: 700; font-size: .9rem; }
+.alert-banner small { opacity: .65; font-size: .78rem; }
 </style>
 {% endblock %}
 
 {% block content %}
-<h4 class="mb-4 text-muted"><i class="bi bi-clock-history"></i> Expense History</h4>
 
-<!-- ✅ تنبيه الميزانية الكلية -->
+<h4 class="page-title"><i class="bi bi-clock-history me-2" style="color:#1D5D74;"></i>Expense History</h4>
+
+<!-- Total Budget Alert -->
 {% if cycle_alert %}
-<div class="alert alert-{{ cycle_alert.type }} alert-dismissible fade show shadow-sm border-0 mb-3" role="alert"
-     style="
-        background-color: {% if cycle_alert.type == 'danger' %}#f8d7da{% elif cycle_alert.type == 'warning' %}#fff3cd{% else %}#d1ecf1{% endif %};
-        border-left: 5px solid {% if cycle_alert.type == 'danger' %}#dc3545{% elif cycle_alert.type == 'warning' %}#ffc107{% else %}#17a2b8{% endif %} !important;
-     ">
-    <div class="d-flex align-items-center">
-        <span class="fs-4 me-3">{% if cycle_alert.type == 'danger' %}🚨{% elif cycle_alert.type == 'warning' %}⚠️{% else %}ℹ️{% endif %}</span>
-        <div>
-            <h6 class="mb-0 fw-bold text-dark">{{ cycle_alert.msg }}</h6>
-            <small class="text-muted">Total Budget Alert</small>
-        </div>
+<div class="alert-banner mb-3"
+     style="background:{% if cycle_alert.type == 'danger' %}#fff5f5{% elif cycle_alert.type == 'warning' %}#fffbeb{% else %}#eff6ff{% endif %};
+            border-left: 5px solid {% if cycle_alert.type == 'danger' %}#ef4444{% elif cycle_alert.type == 'warning' %}#f59e0b{% else %}#3b82f6{% endif %};">
+    <span style="font-size:1.4rem;">{% if cycle_alert.type == 'danger' %}🚨{% elif cycle_alert.type == 'warning' %}⚠️{% else %}ℹ️{% endif %}</span>
+    <div>
+        <h6>{{ cycle_alert.msg }}</h6>
+        <small>Total Budget Alert</small>
     </div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
 </div>
 {% endif %}
 
-<!-- ✅ تنبيه الليميت اليومي -->
+<!-- Daily Limit Alert -->
 {% if daily_alert %}
-<div class="alert alert-{{ daily_alert.type }} alert-dismissible fade show shadow-sm border-0 mb-4" role="alert"
-     style="
-        background-color: {% if daily_alert.type == 'danger' %}#f8d7da{% elif daily_alert.type == 'warning' %}#fff3cd{% else %}#d1ecf1{% endif %};
-        border-left: 5px solid {% if daily_alert.type == 'danger' %}#dc3545{% elif daily_alert.type == 'warning' %}#ffc107{% else %}#17a2b8{% endif %} !important;
-     ">
-style="background-color:{% if daily_alert.type == 'danger' %}#f8d7da{% elif daily_alert.type == 'warning' %}#fff3cd{% else %}#d1ecf1{% endif %};
-border-left:5px solid {% if daily_alert.type == 'danger' %}#dc3545{% elif daily_alert.type == 'warning' %}#ffc107{% else %}#17a2b8{% endif %} !important;">
-    
-    <div class="d-flex align-items-center">
-        <span class="fs-4 me-3">{% if daily_alert.type == 'danger' %}🚨{% elif daily_alert.type == 'warning' %}⚠️{% else %}ℹ️{% endif %}</span>
-        <div>
-            <h6 class="mb-0 fw-bold text-dark">{{ daily_alert.msg }}</h6>
-            <small class="text-muted">Daily Budget Alert System</small>
-        </div>
+<div class="alert-banner mb-4"
+     style="background:{% if daily_alert.type == 'danger' %}#fff5f5{% elif daily_alert.type == 'warning' %}#fffbeb{% else %}#eff6ff{% endif %};
+            border-left: 5px solid {% if daily_alert.type == 'danger' %}#ef4444{% elif daily_alert.type == 'warning' %}#f59e0b{% else %}#3b82f6{% endif %};">
+    <span style="font-size:1.4rem;">{% if daily_alert.type == 'danger' %}🚨{% elif daily_alert.type == 'warning' %}⚠️{% else %}ℹ️{% endif %}</span>
+    <div>
+        <h6>{{ daily_alert.msg }}</h6>
+        <small>Daily Budget Alert</small>
     </div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
 </div>
 {% endif %}
 
-<!-- ✅ Stats Cards -->
+<!-- Stats Cards -->
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="card stat-card p-3">
-            <div class="text-muted small">Total Transactions</div>
-            <div class="fs-3 fw-bold text-dark">{{ transactions|length }}</div>
+            <div class="s-label">Total Transactions</div>
+            <div class="s-val">{{ transactions|length }}</div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card stat-card p-3" style="border-left-color: #D66D55;">
-            <div class="text-muted small">Total Spent</div>
-            <div class="fs-3 fw-bold text-danger">{{ total_spent|floatformat:2 }} EGP</div>
+        <div class="card stat-card coral p-3">
+            <div class="s-label">Total Spent</div>
+            <div class="s-val text-danger">{{ total_spent|floatformat:2 }} EGP</div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card stat-card p-3" style="border-left-color: #28a745;">
-            <div class="text-muted small">Categories Used</div>
-            <div class="fs-3 fw-bold text-success">{{ categories|length }}</div>
+        <div class="card stat-card green p-3">
+            <div class="s-label">Categories Used</div>
+            <div class="s-val text-success">{{ categories|length }}</div>
         </div>
     </div>
 </div>
 
-<!-- ✅ Filter Section -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card p-3">
-            <h6 class="text-muted mb-3"><i class="bi bi-funnel"></i> Filter Transactions</h6>
-            <form method="GET">
-                <div class="row">
-                    <div class="col-md-5 mb-3">
-                        <label class="form-label">Category</label>
-                        <select name="category" class="form-select">
-                            <option value="">All Categories</option>
-                            {% for cat in categories %}
-                                <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ cat.name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-5 mb-3">
-                        <label class="form-label">Date</label>
-                        <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end mb-3">
-                        <div class="d-flex gap-2 w-100">
-                            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
-                            <a href="/history/" class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle"></i></a>
-                        </div>
-                    </div>
+<!-- Filter Section -->
+<div class="filter-card">
+    <div class="d-flex align-items-center mb-3 gap-2">
+        <i class="bi bi-funnel" style="color:#1D5D74;"></i>
+        <span style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6b7a8d;">Filter Transactions</span>
+    </div>
+    <form method="GET">
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label>Category</label>
+                <select name="category" class="form-select">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label>Date</label>
+                <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <div class="d-flex gap-2 w-100">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+                    <a href="/history/" class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle"></i></a>
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
+    </form>
 </div>
 
-<!-- ✅ Transactions Table -->
+<!-- Transactions Table -->
 <div class="card">
-    <div class="card-body">
-        <h6 class="text-muted mb-3">
-            <i class="bi bi-list-ul"></i> Transactions
+    <div class="card-body p-0">
+        <div class="d-flex align-items-center p-3 pb-0">
+            <span style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6b7a8d;">
+                <i class="bi bi-list-ul me-1"></i> Transactions
+            </span>
             <span class="badge bg-secondary ms-2">{{ transactions|length }}</span>
-        </h6>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
+        </div>
+        <div class="table-responsive mt-3">
+            <table class="table table-hover mb-0">
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>Amount</th>
                         <th>Category</th>
-                        <th>Date & Time</th>
+                        <th>Date &amp; Time</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for t in transactions %}
                     <tr>
-                        <td class="text-muted">{{ forloop.counter }}</td>
+                        <td class="text-muted fw-semibold">{{ forloop.counter }}</td>
                         <td class="fw-bold text-danger">{{ t.amount|floatformat:2 }} EGP</td>
                         <td><span class="badge-category">{{ t.category.name }}</span></td>
                         <td class="text-muted">{{ t.timestamp|date:"M d, Y — H:i" }}</td>
                         <td>
-                            <form method="POST" action="/history/" onsubmit="return confirm('هتمسح التراكنزشن دي؟')">
+                            <form method="POST" action="/history/" onsubmit="return confirm('Are you sure you want to delete this transaction?')">
                                 {% csrf_token %}
                                 <input type="hidden" name="transaction_id" value="{{ t.id }}">
-                                <button type="submit" class="btn btn-sm btn-danger">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" style="border-radius:7px;">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
@@ -153,8 +178,8 @@ border-left:5px solid {% if daily_alert.type == 'danger' %}#dc3545{% elif daily_
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                        <td colspan="5" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
                             No transactions found
                         </td>
                     </tr>

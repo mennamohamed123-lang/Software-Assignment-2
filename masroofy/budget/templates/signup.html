@@ -1,15 +1,15 @@
 {% extends "base.html" %}
+{% block title %}Sign Up — Masroofy{% endblock %}
 
 {% block content %}
-
 <div class="auth-wrapper">
     <div class="auth-card">
 
-        <h3 class="text-center mb-4">Create Account</h3>
+        <h3>Create Account</h3>
 
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} mb-3">
+                <div class="alert alert-{{ message.tags }} py-2 mb-3" style="border-radius:7px;font-size:.87rem;">
                     {{ message }}
                 </div>
             {% endfor %}
@@ -18,25 +18,42 @@
         <form method="post">
             {% csrf_token %}
 
-            <input type="text" name="username" class="form-control mb-3" placeholder="Username" required>
+            <div class="mb-3">
+                <input type="text" name="username"
+                       class="form-control"
+                       placeholder="Username"
+                       required autofocus>
+            </div>
 
-            <input type="email" name="email" class="form-control mb-3" placeholder="Email" required>
+            <div class="mb-3">
+                <input type="email" name="email"
+                       class="form-control"
+                       placeholder="Email"
+                       required>
+            </div>
 
-            <input type="password" name="password" class="form-control mb-3" placeholder="Password" required>
+            <div class="mb-3">
+                <input type="password" name="password"
+                       class="form-control"
+                       placeholder="Password"
+                       required>
+            </div>
 
-            <input type="password" name="confirm_password" class="form-control mb-4" placeholder="Confirm Password" required>
+            <div class="mb-4">
+                <input type="password" name="confirm_password"
+                       class="form-control"
+                       placeholder="Confirm Password"
+                       required>
+            </div>
 
-            <button type="submit" class="btn btn-success w-100">
-                Sign Up
-            </button>
+            <button type="submit" class="btn-auth">Sign Up</button>
         </form>
 
-        <p class="text-center mt-3">
+        <p class="auth-footer">
             Already have an account?
             <a href="{% url 'login' %}">Login</a>
         </p>
 
     </div>
 </div>
-
 {% endblock %}
