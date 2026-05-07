@@ -116,7 +116,7 @@ python manage.py runserver
 
 ## Screenshots
 
-![Home](./screenshots/home.png)
+- [Home](screenshots/home.png)
 - [History](screenshots\History.png)
 - [Expense Page](screenshots\NewExpense.png)
 - [Stats](screenshots\stats.png)
