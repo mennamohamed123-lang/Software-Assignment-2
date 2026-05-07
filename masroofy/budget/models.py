@@ -1,7 +1,4 @@
-import django
-import os
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'masroofy.settings')
-django.setup()
+
 
 from django.db import models
 from django.contrib.auth.models import User
