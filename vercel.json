@@ -1,3 +1,4 @@
+
 {
   "version": 2,
   "builds": [
@@ -14,7 +15,6 @@
     }
   ],
   "env": {
-    "DJANGO_SETTINGS_MODULE": "masroofy.settings",
-    "DATABASE_URL": "postgresql://postgres:YasmeenNasr#2006@db.vlqwimqvzeutoqbqivwf.supabase.co:5432/postgres"
+    "DJANGO_SETTINGS_MODULE": "masroofy.settings"
   }
 }
