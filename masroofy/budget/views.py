@@ -1,11 +1,11 @@
 """
 views.py — Masroofy (FIXED)
 ===========================
-الإصلاحات في هذه النسخة:
-  1. Edit cycle  → يعدّل الـ cycle الحالي بدون مسح transactions
-  2. Reset cycle → يمسح كل الـ transactions ثم يعيد تعيين التواريخ
-  3. timedelta   → days - 1 لإصلاح حساب الـ 31 يوم
-  4. History     → فلترة دقيقة بالتاريخ داخل نطاق الـ cycle
+Fixes in this version:
+  1. Edit cycle  → updates the current cycle without deleting transactions
+  2. Reset cycle → deletes all transactions and resets cycle dates
+  3. timedelta   → uses days - 1 to correct 31-day calculations
+  4. History     → applies accurate date filtering within the cycle range
 """
 
 import json
@@ -33,27 +33,30 @@ from .models import Transaction, Category, BudgetCycle, DailyRecord
 # ─────────────────────────────────────────────
 
 def login_view(request):
-    """Handles user authentication and login.
+    """
+    Authenticate a user and establish an active session.
 
-    Processes login form submissions by authenticating the provided username
-    and password. On successful authentication, logs the user in and redirects
-    to the dashboard. On failure, displays an error message and redirects back
-    to the login page.
+    This view supports both GET and POST methods. On GET it renders the
+    login page. On POST it validates the submitted credentials using Django's
+    authentication system and, if valid, logs the user in and redirects to
+    the dashboard.
+
+    Side effects:
+        - Creates a session for authenticated users.
+        - Emits Django authentication events used by middleware and signals.
 
     Args:
-        request: The HTTP request object containing POST data with 'username'
-                and 'password' fields.
+        request (HttpRequest): The incoming request. Expected POST fields:
+            - username (str): The username of the user.
+            - password (str): The raw password.
 
     Returns:
-        If POST request:
-            - Redirect to 'dashboard' on successful login
-            - Redirect to 'login' with error message on failure
-        If GET request:
-            - Rendered login.html template
+        HttpResponse: Rendered login page for GET or failed POST.
+        HttpResponseRedirect: Redirect to dashboard on successful login,
+                              or back to login on failure.
 
-    Note:
-        Uses Django's built-in authentication system. Error messages are
-        displayed using Django's messages framework.
+    Notes:
+        This view does not perform rate limiting or lockout checks.
     """
     if request.method == "POST":
         username = request.POST.get("username")
@@ -68,27 +71,34 @@ def login_view(request):
 
 
 def signup_view(request):
-    """Handles new user registration.
+    """
+    Register a new user account and log them in.
 
-    Processes signup form submissions by validating the provided data and
-    creating a new user account. Checks for username uniqueness and password
-    confirmation. On successful registration, logs the new user in and
-    redirects to the dashboard.
+    GET requests render the signup page. POST requests validate the user's
+    submitted username, email, and password fields, create a new Django User,
+    and automatically authenticate and log in the new account.
+
+    Side effects:
+        - Creates a new User record in the auth_user table.
+        - Starts a new session for the registered user.
 
     Args:
-        request: The HTTP request object containing POST data with 'username',
-                'password', 'confirm_password', and other user fields.
+        request (HttpRequest): The incoming request. Expected POST fields:
+            - username         (str): Desired username; must be unique.
+            - email            (str): User email address.
+            - password         (str): Desired account password.
+            - confirm_password (str): Must match password.
 
     Returns:
-        If POST request:
-            - Redirect to 'dashboard' on successful registration
-            - Redirect to 'signup' with error message on validation failure
-        If GET request:
-            - Rendered signup.html template
+        HttpResponse: Rendered signup page on GET or when validation fails.
+        HttpResponseRedirect: Redirect to dashboard after successful signup.
 
-    Note:
-        Performs basic validation for username availability and password
-        matching. Uses Django's User model for account creation.
+    Validation rules:
+        - username must not already exist.
+        - password and confirm_password must match.
+
+    Notes:
+        This view does not enforce password strength rules or email verification.
     """
     if request.method == "POST":
         username         = request.POST.get("username")
@@ -117,43 +127,44 @@ def signup_view(request):
 
 
 def logout_view(request):
-    """Handles user logout and redirects to login page.
+    """
+    Log out the current user and clear session state.
 
-    Logs out the current user using Django's authentication system and
-    redirects them to the login page. This function works for both GET
-    and POST requests.
+    Calls Django's logout() to remove the authenticated user from the session
+    and clear any session data tied to the current request. After logout it
+    redirects the user to the login page.
 
     Args:
-        request: The HTTP request object from the logged-in user.
+        request (HttpRequest): The incoming HTTP request.
 
     Returns:
-        Redirect response to the login page.
+        HttpResponseRedirect: Redirect to the login page.
 
-    Note:
-        This function does not require authentication checks as Django's
-        logout function handles unauthenticated users gracefully.
+    Notes:
+        This view is safe for unauthenticated requests, as logout() handles
+        missing session state gracefully.
     """
     logout(request)
     return redirect("login")
 
 
 def home(request):
-    """Handles the home page routing based on authentication status.
+    """
+    Route visitors to the appropriate entry point.
 
-    If the user is not authenticated, displays the public landing page.
-    If authenticated, redirects to the expense recording page as the main
-    application interface.
+    If the request is from an unauthenticated user, this view renders the
+    public landing page. If the user is authenticated, it redirects them to
+    the main expense recording page, which is the primary application UI.
 
     Args:
-        request: The HTTP request object.
+        request (HttpRequest): The incoming HTTP request.
 
     Returns:
-        Rendered index.html for unauthenticated users, or redirect to
-        record_expense for authenticated users.
+        HttpResponse: Rendered landing page for unauthenticated users.
+        HttpResponseRedirect: Redirect to record_expense for logged-in users.
 
-    Note:
-        This serves as the entry point that routes users to appropriate
-        sections based on their login status.
+    Notes:
+        This view does not perform any business logic beyond routing.
     """
     if not request.user.is_authenticated:
         return render(request, "index.html")
@@ -165,35 +176,38 @@ def home(request):
 # ─────────────────────────────────────────────
 
 def _parse_cycle_form(post, today):
-    """Parses and validates budget cycle form data from POST request.
+    """
+    Parse and validate budget cycle creation or update form data.
 
-    Processes form input for creating or editing budget cycles, handling
-    both duration-based (number of days) and end-date-based cycle specifications.
-    Performs comprehensive validation and provides detailed error messages.
+    This helper supports two mutually exclusive ways to define the cycle
+    duration: a numeric day count or an explicit end date. It also validates
+    the total allowance and returns sanitized results for the calling view.
 
     Args:
-        post: The request.POST QueryDict containing form data with keys:
-             - 'total_allowance': String representation of budget amount
-             - 'duration_days': Optional string for number of days
-             - 'end_date': Optional string in 'YYYY-MM-DD' format
-        today: Date object representing the current date for validation.
+        post (QueryDict): The POST data with fields:
+            - total_allowance (str): Required budget amount.
+            - duration_days   (str): Optional cycle length in days.
+            - end_date        (str): Optional cycle end date in YYYY-MM-DD.
+        today (date): Current server date used for validation and to compute
+                      the inclusive end date range.
 
     Returns:
-        Tuple of (total_allowance, end_date, errors, form_data):
-        - total_allowance: Float budget amount or None if invalid
-        - end_date: Date object for cycle end or None if invalid
-        - errors: List of error message strings
-        - form_data: Dict with original form values for re-populating forms
+        tuple: (total_allowance, end_date, errors, form_data)
+            - total_allowance (float | None): Parsed budget amount, or None if invalid.
+            - end_date (date | None): Parsed or computed cycle end date.
+            - errors (list[str]): Validation errors to show to the user.
+            - form_data (dict): Raw submitted values for form repopulation.
 
-    Validation Rules:
-        - total_allowance: Must be positive float
-        - duration_days: Must be positive integer >= 1, calculates end_date
-        - end_date: Must be valid date >= today, or duration_days must be provided
-        - Either duration_days or end_date must be specified
+    Validation rules:
+        - total_allowance must be a positive float.
+        - duration_days must be a positive integer if provided.
+        - end_date must be a valid date string and not before today.
+        - At least one of duration_days or end_date must be provided.
 
-    Note:
-        Uses corrected date calculation (days - 1) so 30 days means
-        day 1 through day 30 inclusive, not 31 days total.
+    Inclusive range logic:
+        Uses end_date = today + timedelta(days=duration_days - 1) so that a
+        duration of 30 days counts today as day 1 and the computed end date
+        as day 30.
     """
     errors    = []
     form_data = {}
@@ -241,33 +255,35 @@ def _parse_cycle_form(post, today):
 
 @csrf_exempt
 def setup_cycle(request):
-    """Dedicated view for initial budget cycle setup.
+    """
+    Create or replace the user's active budget cycle via a dedicated setup page.
 
-    Provides a separate interface for creating the first budget cycle when
-    a user has no active cycle. Handles form validation and cycle creation
-    with proper error handling and user feedback.
+    This view is used when the user wants to create a new budget cycle from a
+    separate page rather than the inline form in record_expense. It validates
+    the cycle input, deactivates an existing active cycle, and creates a new
+    BudgetCycle record with initial balance data.
+
+    HTTP behavior:
+        GET: Render the cycle setup page.
+        POST: Validate input and create the new cycle.
 
     Args:
-        request: HTTP request object from authenticated user.
+        request (HttpRequest): Authenticated user's request. Expected POST
+                               fields are the same as _parse_cycle_form.
 
     Returns:
-        POST: Redirect to record_expense on successful cycle creation,
-              or re-render form with errors
-        GET: Render setup_cycle.html template with form
+        HttpResponse: Rendered setup page on GET or validation failure.
+        HttpResponseRedirect: Redirect to record_expense on success.
 
-    Context Variables:
-        - errors: List of validation error messages
-        - form_data: Dictionary with current form values for re-population
-        - active_cycle: Current active cycle (should be None for this view)
-
-    Business Logic:
-        - Deactivates any existing active cycles before creating new one
-        - Calculates safe_daily_limit as total_allowance / total_days
-        - Sets cycle as active and initializes remaining_balance
+    Business rules:
+        - Only one active cycle exists per user at a time.
+        - A newly created cycle starts today and lasts until the computed end date.
+        - remaining_balance is initialized to total_allowance.
+        - safe_daily_limit is calculated as total_allowance / total_days.
 
     Note:
-        This view is typically accessed when record_expense detects no active cycle.
-        Uses the same _parse_cycle_form helper for consistent validation.
+        This view does not preserve old transactions; it strictly replaces the
+        active cycle record when a new cycle is created.
     """
     active_cycle = (
         BudgetCycle.objects.filter(is_active=True, user=request.user).first()
@@ -308,32 +324,32 @@ def setup_cycle(request):
 # ─────────────────────────────────────────────
 
 def get_daily_alert(daily_record):
-    """Generates alert information for daily spending status.
+    """
+    Determine the daily spending alert state for the current day.
 
-    Analyzes the current day's spending against the allocated daily limit
-    and returns appropriate alert information based on spending thresholds.
-    Used to provide user feedback on daily budget status.
+    This helper compares the actual amount spent today against the currently
+    allocated daily limit and generates a user-facing alert dictionary if the
+    spending threshold has been crossed.
 
     Args:
-        daily_record: DailyRecord instance for the current day, or None.
+        daily_record (DailyRecord | None): The DailyRecord for today.
 
     Returns:
-        Dict with alert information or None if no alert needed:
-        {
-            "msg": str,           # Alert message in Arabic
-            "type": str,          # Bootstrap alert type ("danger", "warning", "info")
-            "percentage": float   # Spending percentage (0-100)
-        }
+        dict | None: Returns None if no alert is needed. Otherwise a dictionary
+        with keys:
+            - msg (str): Alert message for the user.
+            - type (str): Alert styling type (danger, warning, info).
+            - percentage (float): Spending percentage of today's limit.
 
-    Alert Thresholds:
-        - 100%+: "danger" - Daily limit reached/exceeded
-        - 80-99%: "warning" - High spending warning
-        - 60-79%: "info" - Moderate spending notice
-        - <60%: None - No alert
+    Behavior:
+        - Uses actual recorded transactions for today to compute spent.
+        - Falls back to no alert if the daily limit is zero.
+        - Caps the displayed percentage at 100 for the danger case.
 
-    Note:
-        Queries actual transactions for the day to ensure accurate spending
-        calculation, rather than relying on stored total_spent which may be stale.
+    Thresholds:
+        >= 100% -> danger
+        >= 80%  -> warning
+        >= 60%  -> info
     """
     if not daily_record:
         return None
@@ -361,31 +377,30 @@ def get_daily_alert(daily_record):
 
 
 def get_cycle_alert(cycle):
-    """Generates alert information for overall cycle budget status.
+    """
+    Determine the overall cycle-level budget alert state.
 
-    Analyzes total spending against the cycle's total allowance and returns
-    appropriate alert information based on budget utilization thresholds.
+    This helper uses actual cycle transactions to compute the total amount
+    spent so far. It then compares that spending to the cycle's total
+    allowance and returns an alert dictionary if the budget crosses a threshold.
 
     Args:
-        cycle: BudgetCycle instance, or None.
+        cycle (BudgetCycle | None): The active budget cycle.
 
     Returns:
-        Dict with alert information or None if no alert needed:
-        {
-            "msg": str,           # Alert message in Arabic
-            "type": str,          # Bootstrap alert type ("danger", "warning", "info")
-            "percentage": float   # Spending percentage (0-100)
-        }
+        dict | None: Returns None if no alert is needed. Otherwise returns:
+            - msg (str): Alert message describing budget status.
+            - type (str): Alert type (danger, warning, success).
+            - percentage (float): Percentage of the cycle budget spent.
 
-    Alert Thresholds:
-        - 100%+: "danger" - Budget exhausted
-        - 80-99%: "warning" - High utilization warning
-        - 60-79%: "info" - Moderate utilization notice
-        - <60%: None - No alert
+    Behavior:
+        - Uses a live transaction aggregation to avoid stale balance state.
+        - Handles cycles with zero allowance gracefully.
 
-    Note:
-        Calculates actual spending by querying all transactions in the cycle,
-        ensuring accuracy even if balance calculations have discrepancies.
+    Thresholds:
+        >= 100% -> danger
+        >= 80%  -> warning
+        >= 60%  -> info
     """
     if not cycle:
         return None
@@ -409,26 +424,26 @@ def get_cycle_alert(cycle):
 
 @csrf_exempt
 def delete_transaction(request, tx_id):
-    """Deletes a specific transaction and redirects to expense recording page.
+    """
+    Delete a specific transaction and redirect to the expense page.
 
-    Removes a transaction by ID, ensuring the user owns it. The deletion
-    automatically triggers balance updates via the post_delete signal in models.py
-    which adjusts both cycle remaining_balance and daily record total_spent.
+    This view ensures that the transaction belongs to the currently logged-in
+    user before deletion. It relies on the Transaction post_delete signal to
+    restore budget state consistency after the record is removed.
 
     Args:
-        request: The HTTP request object from an authenticated user.
-        tx_id: The primary key of the transaction to delete.
+        request (HttpRequest): The incoming request.
+        tx_id (int): Primary key of the transaction to delete.
 
     Returns:
-        Redirect response to the record_expense page.
+        HttpResponseRedirect: Redirect to record_expense.
 
     Raises:
-        Http404: If the transaction doesn't exist or doesn't belong to the user.
+        Http404: If the transaction does not exist or does not belong to the user.
 
-    Note:
-        Uses get_object_or_404 for security, ensuring users can only delete
-        their own transactions. Balance reconciliation happens automatically
-        through the signal system.
+    Notes:
+        Deletion is permanent and cascade safety is handled by Django ORM and
+        the models.py signal handler.
     """
     transaction = get_object_or_404(Transaction, pk=tx_id, user=request.user)
     transaction.delete()
@@ -441,52 +456,51 @@ def delete_transaction(request, tx_id):
 
 @csrf_exempt
 def record_expense(request):
-    """Main expense recording interface handling cycle management and expense logging.
+    """
+    The main budget interface: cycle management and expense entry.
 
-    This is the primary application view that handles:
-    - Creating new budget cycles when none exist
-    - Editing existing cycles (updating budget/duration without clearing transactions)
-    - Resetting cycles (clearing all transactions and restarting)
-    - Recording new expenses with validation and balance updates
-    - Displaying current budget status, alerts, and transaction history
+    This view combines several responsibilities on a single page. It can:
+        - Create a new budget cycle when none exists.
+        - Edit an existing cycle's budget and end date without deleting past transactions.
+        - Reset the active cycle by clearing transactions and daily records.
+        - Record a new expense transaction and update budget state.
+        - Display current cycle progress, alert messages, and today's transactions.
 
-    The function supports multiple POST actions via request.POST.get("action"):
-    - "create_cycle": Creates initial budget cycle
-    - "edit_cycle": Modifies existing cycle parameters
-    - "reset_cycle": Clears transactions and resets cycle
-    - Default POST: Records a new expense
+    POST actions are determined by request.POST["action"]:
+        - create_cycle: initialize a new BudgetCycle.
+        - edit_cycle: modify an active cycle while preserving history.
+        - reset_cycle: clear existing cycle data and restart from today.
+        - default POST: record a new expense.
+
+    Daily limit strategy:
+        - If today already has a DailyRecord, keep its allocated_limit fixed.
+        - If today has no record, compute a fresh limit from remaining_balance
+          and persist it once for the day.
+        - This makes the daily limit stable for the duration of the day.
 
     Args:
-        request: HTTP request object from authenticated user.
+        request (HttpRequest): The incoming request from a logged-in user.
 
     Returns:
-        Rendered expense_entry.html template with comprehensive context including:
-        - Current cycle information and status
-        - Available categories for expense selection
-        - Today's transactions and spending summary
-        - Alert notifications for budget thresholds
-        - Form data and validation errors
-        - Dynamic daily limit calculations
+        HttpResponse: Rendered expense entry page for GET and validation failures.
+        HttpResponseRedirect: Redirect to record_expense after successful POST.
 
-    Context Variables:
-        - cycle: Current active BudgetCycle or None
-        - categories: List of all available categories
-        - today_transactions: List of today's transactions
-        - daily_alert/cycle_alert: Budget threshold alerts
-        - dynamic_daily_limit: Recalculated daily spending limit
-        - spent_today: Total spent today
-        - form: Dictionary with current form values and errors
+    Context available to the template:
+        - cycle: current active BudgetCycle or None.
+        - categories: categories list for expense selection.
+        - today_transactions: today's transaction list.
+        - dynamic_daily_limit: today's locked daily limit.
+        - spent_today: total spent today.
+        - days_left: remaining days in the cycle.
+        - total_days: duration of the cycle in days.
+        - daily_alert / cycle_alert: alert dictionaries for UI.
+        - form: current input values and validation errors.
 
-    Business Logic:
-        - Automatically rolls over pending surpluses/deficits
-        - Updates daily records with current spending
-        - Recalculates remaining balances and daily limits
-        - Provides real-time budget status feedback
-
-    Note:
-        This function integrates multiple business concerns: cycle management,
-        expense recording, balance calculations, and UI state management.
-        Changes here affect the core user experience and data integrity.
+    Notes:
+        - All cycle and expense operations are handled here to keep the
+          user experience centralized.
+        - Expense recording delegates the actual transaction insertion to
+          ExpenseView for atomic balance updates.
     """
     cat_dao = CategoryDAO()
     tx_dao  = TransactionDAO()
@@ -546,11 +560,19 @@ def record_expense(request):
                 total_days    = (end_date - today).days + 1
                 days_left     = max((end_date - today).days + 1, 1)
 
+                new_daily_limit = round(new_remaining / days_left, 2)
+
                 cycle.total_allowance   = total_allowance
                 cycle.end_date          = end_date
                 cycle.remaining_balance = new_remaining
-                cycle.safe_daily_limit  = round(new_remaining / days_left, 2)
+                cycle.safe_daily_limit  = new_daily_limit
                 cycle.save()
+
+                # ✅ لما اليوزر يعمل edit بإرادته، حدّث الـ limit لليوم الحالي
+                DailyRecord.objects.filter(
+                    user=request.user, cycle=cycle, date=today
+                ).update(allocated_limit=new_daily_limit)
+
                 return redirect("record_expense")
 
         return redirect("record_expense")
@@ -617,25 +639,48 @@ def record_expense(request):
     daily_record        = None
 
     if cycle:
-        days_left           = max((cycle.end_date - today).days + 1, 1)
-        dynamic_daily_limit = round(cycle.remaining_balance / days_left, 2)
-
-        if cycle.safe_daily_limit != dynamic_daily_limit:
-            cycle.safe_daily_limit = dynamic_daily_limit
-            cycle.save(update_fields=["safe_daily_limit"])
-
+        # ── الـ spent_today يتحدث دايماً (عشان يعرض الصح) ──────────────
         spent_today = float(
             Transaction.objects.filter(cycle=cycle, timestamp__date=today)
             .aggregate(total=Sum("amount"))["total"] or 0
         )
 
-        daily_record, _ = DailyRecord.objects.get_or_create(
-            user=request.user, cycle=cycle, date=today,
-            defaults={"allocated_limit": dynamic_daily_limit, "total_spent": spent_today},
-        )
-        daily_record.total_spent     = spent_today
-        daily_record.allocated_limit = dynamic_daily_limit
-        daily_record.save(update_fields=["total_spent", "allocated_limit"])
+        # ── الـ DailyRecord: يتحسب الـ limit مرة واحدة في بداية كل يوم ──
+        #
+        # المنطق:
+        #   - لو في DailyRecord لليوم ده → استخدم الـ allocated_limit المخزّن
+        #     (لا تغيّره طول اليوم حتى لو اتصرف فلوس)
+        #   - لو مفيش DailyRecord (يوم جديد) → احسب الـ limit من الـ remaining
+        #     واحفظه مرة واحدة فقط
+        #
+        # ✅ كده الـ limit ثابت طول اليوم ويتغير بس في أول request لليوم الجديد
+        existing_record = DailyRecord.objects.filter(
+            user=request.user, cycle=cycle, date=today
+        ).first()
+
+        if existing_record:
+            # ✅ يوم مستمر — الـ limit ثابت، بس الـ spent_today يتحدث
+            dynamic_daily_limit = existing_record.allocated_limit
+            existing_record.total_spent = spent_today
+            existing_record.save(update_fields=["total_spent"])
+            daily_record = existing_record
+        else:
+            # ✅ يوم جديد — احسب الـ limit الآن من الـ remaining الحالي
+            days_left           = max((cycle.end_date - today).days + 1, 1)
+            dynamic_daily_limit = round(cycle.remaining_balance / days_left, 2)
+
+            # احفظ الـ limit في الـ DailyRecord — ولن يتغير طول اليوم
+            daily_record = DailyRecord.objects.create(
+                user=request.user,
+                cycle=cycle,
+                date=today,
+                allocated_limit=dynamic_daily_limit,
+                total_spent=spent_today,
+            )
+
+            # حدّث الـ safe_daily_limit في الـ cycle كمرجع فقط
+            cycle.safe_daily_limit = dynamic_daily_limit
+            cycle.save(update_fields=["safe_daily_limit"])
 
     days_left  = max((cycle.end_date - today).days + 1, 0) if cycle else 0
     total_days = (cycle.end_date - cycle.start_date).days + 1 if cycle else 1
@@ -704,37 +749,27 @@ def record_expense(request):
 # ─────────────────────────────────────────────
 
 class HistoryView(View):
-    """Presents historical transactions and spending filters for the active cycle."""
+    """
+    Render the user's transaction history page for the active cycle.
 
+    This view limits history to transactions that belong to the currently
+    active budget cycle and its date range. It also supports optional GET
+    filters for category and date, and accepts POST requests to delete a
+    single transaction from the history.
+
+    URL: /history/
+    """
     def get(self, request):
-        """Displays transaction history with filtering and analytics for the active cycle.
+        """
+        Retrieve and display filtered transaction history for the active cycle.
 
-        Shows all transactions within the current active budget cycle, with support
-        for category and date filtering. Provides spending summaries and category
-        breakdowns. Only displays transactions that fall within the cycle's date range.
-
-        Query Logic:
-        - Filters transactions by current active cycle
-        - Constrains to cycle.start_date <= transaction.date <= cycle.end_date
-        - Applies optional category and date filters from request.GET
-        - Orders results by timestamp descending (newest first)
-
-        Args:
-            request: HTTP request with optional GET parameters:
-                   - category: Category ID to filter by
-                   - date: Specific date to filter transactions
+        The query is constrained to the active cycle and its date range, which
+        prevents older cycle records from appearing in the current cycle's
+        history. Optional query parameters permit filtering by category or date.
 
         Returns:
-            Rendered history.html template with:
-            - Filtered transactions list
-            - Category list with spending totals
-            - Total spent amount
-            - Current cycle information
-            - Budget alerts
-
-        Note:
-            Uses select_related for efficient category loading.
-            Category totals include all user transactions, not just filtered ones.
+            HttpResponse: Rendered history.html with filtered transactions,
+                          category aggregates, and alert context.
         """
         # الـ cycle الحالي النشط
         cycle = BudgetCycle.objects.filter(user=request.user, is_active=True).first()
@@ -789,20 +824,18 @@ class HistoryView(View):
         })
 
     def post(self, request):
-        """Handles transaction deletion from history view.
+        """
+        Delete a transaction from the active cycle history.
 
-        Processes POST requests to delete specific transactions from the history.
-        Ensures user owns the transaction before deletion.
+        Expects a POST field named transaction_id and removes the matching
+        transaction for the authenticated user. After deletion it redirects
+        back to the history page.
 
         Args:
-            request: HTTP request with 'transaction_id' in POST data.
+            request (HttpRequest): The incoming POST request.
 
         Returns:
-            Redirect to history page after deletion.
-
-        Note:
-            Deletion triggers automatic balance updates via post_delete signal.
-            No validation errors are shown; failed deletions are silent.
+            HttpResponseRedirect: Redirect to /history/.
         """
         transaction_id = request.POST.get("transaction_id")
         if transaction_id:
@@ -815,45 +848,23 @@ class HistoryView(View):
 # ─────────────────────────────────────────────
 
 class DashboardView(LoginRequiredMixin, View):
-    """Shows the authenticated user's current budget dashboard and progress."""
+    """
+    Render the authenticated user's main budget dashboard.
+
+    Provides a summary of the active cycle including:
+        - total budget allowance
+        - amount spent so far
+        - remaining balance
+        - days left in the cycle
+        - dynamic daily spending guidance
+        - recent transactions and budget status alerts
+
+    Requires a logged-in user and redirects unauthenticated requests to login.
+    URL: /dashboard/
+    """
     login_url = "login"
 
     def get(self, request):
-        """Displays comprehensive budget dashboard with key metrics and recent activity.
-
-        Provides an overview of the current budget cycle including spending progress,
-        remaining budget, recent transactions, and budget health indicators.
-        Requires authentication and an active budget cycle.
-
-        Dashboard Metrics:
-        - Total budget, spent amount, and remaining balance
-        - Spending percentage and progress indicators
-        - Recent transactions (last 5)
-        - Dynamic daily spending limit
-        - Budget alerts and warnings
-        - Days remaining in cycle
-
-        Args:
-            request: HTTP request from authenticated user.
-
-        Returns:
-            Rendered dashboard.html template with comprehensive budget data,
-            or error page if no active cycle exists.
-
-        Context Variables:
-            - total: Total cycle budget amount
-            - spent: Amount spent so far
-            - remaining: Amount still available
-            - latest: List of 5 most recent transactions
-            - cycle: Current active BudgetCycle
-            - daily_limit: Calculated daily spending limit
-            - spent_pct: Percentage of budget used
-            - Various boolean flags for UI states (alerts, warnings)
-
-        Note:
-            Calculates real-time metrics by querying actual transactions
-            rather than relying on stored balance fields for accuracy.
-        """
         cycle = BudgetCycle.objects.filter(is_active=True, user=request.user).first()
 
         if not cycle:
@@ -899,37 +910,28 @@ class DashboardView(LoginRequiredMixin, View):
 # ─────────────────────────────────────────────
 
 class StatsView(View):
-    """Provides spending statistics and chart-ready data for the active cycle."""
+    """
+    Provide spending statistics for the active budget cycle.
 
+    This view aggregates transaction data into datasets suitable for charting.
+    It generates a category breakdown and a daily spending trend for the
+    currently active cycle.
+
+    URL: /stats/
+    """
     def get(self, request):
-        """Displays spending statistics and visualizations for the active budget cycle.
+        """
+        Retrieve statistics for the user's active budget cycle.
 
-        Generates data for charts and graphs showing spending patterns by category
-        and over time. Provides insights into spending habits and budget utilization.
-
-        Chart Data Generated:
-        - Category pie chart: Spending distribution across categories
-        - Daily spending line chart: Spending progression over cycle days
+        Aggregates transactions by category and by calendar date, then renders
+        the stats page with chart-ready values. If no active cycle exists, it
+        returns the template with an error indicator.
 
         Args:
-            request: HTTP request object.
+            request (HttpRequest): The incoming GET request.
 
         Returns:
-            Rendered stats.html template with chart data:
-            - labels: Category names for pie chart
-            - values: Spending amounts per category
-            - total_spent: Total cycle spending
-            - line_labels: Dates for line chart
-            - line_values: Daily spending amounts
-
-        Data Processing:
-        - Aggregates spending by category using Django's values/annotate
-        - Groups daily spending using TruncDate for accurate date bucketing
-        - Orders daily data chronologically for proper chart rendering
-
-        Note:
-        Requires an active budget cycle. If none exists, shows error message.
-        Chart data is suitable for JavaScript charting libraries like Chart.js.
+            HttpResponse: Rendered stats page populated with spending data.
         """
         from django.db.models.functions import TruncDate
 
@@ -968,34 +970,34 @@ class StatsView(View):
 # ─────────────────────────────────────────────
 
 class NotificationView(View):
-    """Renders budget notification status based on current cycle utilization."""
+    """
+    Render budget health notifications for the active cycle.
 
+    This view calculates the current cycle spending percentage and returns a
+    status panel indicating whether the user is within budget, approaching the
+    limit, or has exhausted the budget. It also includes daily and cycle-level
+    alert context.
+
+    Notification Levels:
+        100% or more -> danger
+        80% or more  -> warning
+        below 80%    -> success
+
+    URL: /notifications/check/
+    """
     def get(self, request):
-        """Displays budget notifications and spending alerts.
+        """
+        Show current notifications for the active budget cycle.
 
-        Shows current budget status with color-coded notifications based on
-        spending levels. Provides clear feedback on budget health and spending
-        patterns to help users stay within their limits.
-
-        Notification Levels:
-        - Success (Green): Spending under 80% of budget
-        - Warning (Yellow): Spending between 80-99% of budget
-        - Danger (Red): Budget exhausted (100%+ spending)
+        Computes the cycle spending percentage and selects a notification level
+        of danger, warning, or success. It also provides daily and cycle alerts
+        for the template.
 
         Args:
-            request: HTTP request object.
+            request (HttpRequest): The incoming GET request.
 
         Returns:
-            Rendered notifications.html template with:
-            - spent_pct: Percentage of budget used (rounded to 1 decimal)
-            - notification_level: Bootstrap alert class ("success", "warning", "danger")
-            - total_spent: Total amount spent in cycle
-            - cycle: Current active BudgetCycle
-            - daily_alert/cycle_alert: Additional budget alerts
-
-        Note:
-        Requires an active budget cycle. Shows error message if none exists.
-        Calculates spending percentage from actual transactions for accuracy.
+            HttpResponse: Rendered notifications page with current budget status.
         """
         cycle = BudgetCycle.objects.filter(is_active=True, user=request.user).first()
         if not cycle:
@@ -1014,7 +1016,7 @@ class NotificationView(View):
         else:
             notification_level = "success"
 
-        today = timezone.now().date()
+        today        = timezone.now().date()
         daily_record = None
         if cycle:
             daily_record, _ = DailyRecord.objects.get_or_create(

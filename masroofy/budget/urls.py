@@ -1,9 +1,9 @@
 """
 urls.py — Masroofy
 ==================
-تم إضافة:
-  - path('record/reset/', ...) مش محتاجها لأن الـ reset بيتم عبر POST action في نفس الـ /record/
-  - تم تنظيف التكرار في الـ URLs
+Changes in this version:
+  - Removed path('record/reset/') because reset is handled by a POST action at /record/
+  - Cleaned duplicate URL patterns
 """
 
 from django.contrib import admin
@@ -27,6 +27,9 @@ urlpatterns = [
 
     # DELETE single transaction
     path('record/delete/<int:tx_id>/', views.delete_transaction, name='delete_transaction'),
+
+    # Setup cycle (separate optional page)
+    path('setup/', views.setup_cycle, name='setup_cycle'),
 
     # ── Dashboard ─────────────────────────────────────────
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),

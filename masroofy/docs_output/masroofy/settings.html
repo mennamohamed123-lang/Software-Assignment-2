@@ -67,13 +67,13 @@
                     <a class="variable" href="#LANGUAGE_CODE">LANGUAGE_CODE</a>
             </li>
             <li>
+                    <a class="variable" href="#USE_TZ">USE_TZ</a>
+            </li>
+            <li>
                     <a class="variable" href="#TIME_ZONE">TIME_ZONE</a>
             </li>
             <li>
                     <a class="variable" href="#USE_I18N">USE_I18N</a>
-            </li>
-            <li>
-                    <a class="variable" href="#USE_TZ">USE_TZ</a>
             </li>
             <li>
                     <a class="variable" href="#STATIC_URL">STATIC_URL</a>
@@ -225,8 +225,8 @@
 </span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>
 </span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="n">LANGUAGE_CODE</span> <span class="o">=</span> <span class="s1">&#39;en-us&#39;</span>
 </span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>
-</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a><span class="n">TIME_ZONE</span> <span class="o">=</span> <span class="s1">&#39;UTC&#39;</span>
-</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a><span class="n">USE_TZ</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="n">TIME_ZONE</span> <span class="o">=</span> <span class="s1">&#39;Africa/Cairo&#39;</span>
 </span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a><span class="n">USE_I18N</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>
 </span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a><span class="n">USE_TZ</span> <span class="o">=</span> <span class="kc">True</span>
@@ -297,7 +297,7 @@
                     <div class="attr variable">
             <span class="name">INSTALLED_APPS</span>        =
 <input id="INSTALLED_APPS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="INSTALLED_APPS-view-value"></label><span class="default_value">[&#39;django.contrib.admin&#39;, &#39;django.contrib.auth&#39;, &#39;django.contrib.contenttypes&#39;, &#39;django.contrib.sessions&#39;, &#39;django.contrib.messages&#39;, &#39;django.contrib.staticfiles&#39;, &#39;budget.apps.BudgetConfig&#39;]</span>
+            <label class="view-value-button pdoc-button" for="INSTALLED_APPS-view-value"></label><span class="default_value">[&#39;django.contrib.admin&#39;, &#39;django.contrib.auth&#39;, &#39;django.contrib.contenttypes&#39;, &#39;django.contrib.sessions&#39;, &#39;django.contrib.messages&#39;, &#39;django.contrib.staticfiles&#39;, &#39;<a href="../budget/apps.html#BudgetConfig">budget.apps.BudgetConfig</a>&#39;]</span>
 
         
     </div>
@@ -394,10 +394,22 @@
     
 
                 </section>
+                <section id="USE_TZ">
+                    <div class="attr variable">
+            <span class="name">USE_TZ</span>        =
+<span class="default_value">True</span>
+
+        
+    </div>
+    <a class="headerlink" href="#USE_TZ"></a>
+    
+    
+
+                </section>
                 <section id="TIME_ZONE">
                     <div class="attr variable">
             <span class="name">TIME_ZONE</span>        =
-<span class="default_value">&#39;UTC&#39;</span>
+<span class="default_value">&#39;Africa/Cairo&#39;</span>
 
         
     </div>
@@ -414,18 +426,6 @@
         
     </div>
     <a class="headerlink" href="#USE_I18N"></a>
-    
-    
-
-                </section>
-                <section id="USE_TZ">
-                    <div class="attr variable">
-            <span class="name">USE_TZ</span>        =
-<span class="default_value">True</span>
-
-        
-    </div>
-    <a class="headerlink" href="#USE_TZ"></a>
     
     
 
