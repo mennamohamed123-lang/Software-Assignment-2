@@ -4,7 +4,7 @@
     {
       "src": "masroofy/masroofy/wsgi.py",
       "use": "@vercel/python",
-      "config": { "runtime": "python3.9" }
+      "config": { "runtime": "python3.13" }
     }
   ],
   "routes": [
