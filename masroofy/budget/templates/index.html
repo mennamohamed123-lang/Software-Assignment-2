@@ -1,130 +1,69 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Masroofy</title>
+{% extends "base.html" %}
+{% block title %}Home — Masroofy{% endblock %}
 
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% block extra_css %}
+<style>
+    .hero {
+        padding: 80px 0;
+    }
 
-    <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    .card-soft {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        transition: 0.3s;
+    }
 
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: #edf0f1;
-        }
+    .card-soft:hover {
+        transform: translateY(-5px);
+    }
 
-        .navbar {
-            background: #1D5D74;
-        }
+    .cta-box {
+        background: var(--teal);
+        border-radius: 25px;
+        padding: 50px;
+        color: white;
+    }
 
-        .navbar a {
-            color: white !important;
-            text-decoration: none;
-        }
+    .btn-hero {
+        background: var(--teal);
+        color: white;
+        border-radius: 30px;
+        padding: 10px 20px;
+        border: none;
+        transition: 0.3s;
+        text-decoration: none;
+    }
 
-        .btn-main {
-            background: #1D5D74;
-            color: white;
-            border-radius: 30px;
-            padding: 10px 20px;
-            border: none;
-            transition: 0.3s;
-        }
+    .btn-hero:hover {
+        opacity: 0.9;
+        transform: scale(1.05);
+        background: #ff8c00;
+        color: white;
+    }
+</style>
+{% endblock %}
 
-        .btn-main:hover {
-            opacity: 0.9;
-            transform: scale(1.05);
-            background: #ff8c00;
-        }
-
-        .btn-main:active {
-            background: #ff8c00;
-            color: white;
-            transform: scale(0.97);
-        }
-
-        .hero {
-            padding: 80px 0;
-        }
-
-        .card-soft {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            transition: 0.3s;
-        }
-
-        .card-soft:hover {
-            transform: translateY(-5px);
-        }
-
-        .cta-box {
-            background: #1D5D74;
-            border-radius: 25px;
-            padding: 50px;
-            color: white;
-        }
-    </style>
-</head>
-
-<body>
-
-<!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg px-5">
-    <a class="navbar-brand fw-bold text-white" href="#">Masroofy</a>
-
-    <div class="ms-auto">
-
-        <a class="me-3 text-white" href="{% url 'home' %}">Home</a>
-
-        {% if user.is_authenticated %}
-
-            <!-- 👤 User logged in -->
-            <span class="me-3 text-white">
-                👋 {{ user.username }}
-            </span>
-
-            <a class="me-3 text-white" href="{% url 'dashboard' %}">Dashboard</a>
-            <a class="me-3 text-white" href="{% url 'logout' %}">Logout</a>
-
-        {% else %}
-
-            <!-- 🔓 Guest -->
-            <a class="me-3 text-white" href="{% url 'login' %}">Login</a>
-            
-
-            <a href="{% url 'signup' %}" class="btn btn-main">
-                Get Started
-            </a>
-
-        {% endif %}
-
-    </div>
-</nav>
+{% block content %}
 
 <!-- HERO -->
 <section class="container hero">
     <div class="row align-items-center">
-
         <div class="col-md-6">
             <h1 class="fw-bold">
-                Master Your Student Budget with 
+                Master Your Student Budget with
                 <span class="text-primary">Masroofy</span>
             </h1>
 
             <p class="text-muted mt-3">
-                Track expenses, set daily limits, and gain financial freedom 
+                Track expenses, set daily limits, and gain financial freedom
                 without spreadsheets.
             </p>
 
-            <a href="{% url 'signup' %}" class="btn btn-main me-2 mt-3">Get Started</a>
+            <a href="{% url 'signup' %}" class="btn-hero me-2 mt-3 d-inline-block">Get Started</a>
             <a href="{% url 'login' %}" class="btn btn-outline-secondary mt-3">Login</a>
         </div>
-
     </div>
 </section>
 
@@ -195,5 +134,4 @@
     <p>© 2026 Masroofy</p>
 </footer>
 
-</body>
-</html>
+{% endblock %}
