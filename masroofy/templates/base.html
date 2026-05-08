@@ -76,7 +76,6 @@
             background: rgba(255,255,255,0.1);
         }
 
-        /* "Get Started" pill — زي الصورة */
         .btn-main {
             color: #fff !important;
             border: 1.5px solid rgba(255,255,255,0.7) !important;
@@ -94,7 +93,6 @@
             border-color: #fff !important;
         }
 
-        /* Hamburger */
         .navbar-toggler {
             border-color: rgba(255,255,255,0.45) !important;
             border-radius: 7px !important;
@@ -192,7 +190,7 @@
         }
 
         /* =====================================================
-           SIDEBAR — بالظبط زي الصورة
+           SIDEBAR
         ===================================================== */
         .sidebar {
             background: linear-gradient(180deg, var(--teal) 0%, var(--teal-dk) 100%);
@@ -209,7 +207,6 @@
             overflow-x: hidden;
         }
 
-        /* Brand — "Masroofy / BUDGET TRACKER" زي الصورة */
         .sb-brand {
             padding: 20px 18px 16px;
             border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -246,7 +243,6 @@
             margin-top: 2px;
         }
 
-        /* Section labels — "MAIN" / "INSIGHTS" زي الصورة */
         .sb-section {
             font-size: .6rem;
             font-weight: 700;
@@ -256,7 +252,6 @@
             padding: 16px 20px 5px;
         }
 
-        /* Nav links — زي الصورة بالظبط */
         .sidebar a {
             position: relative;
             color: rgba(255,255,255,0.6);
@@ -287,7 +282,6 @@
 
         .sidebar a:hover i { opacity: 1; }
 
-        /* Active — mint indicator bar زي الصورة */
         .active-link {
             background: rgba(255,255,255,0.12) !important;
             color: #fff !important;
@@ -296,17 +290,16 @@
 
         .active-link i { opacity: 1 !important; }
 
-        /* الخط الأخضر على اليسار زي الصورة */
         .active-link::before {
-    content: '';
-    position: absolute;
-    left: 8px;
-    width: 3px;
-    height: 18px;
-    background: var(--mint);
-    border-radius: 2px;
-}
-        /* Bottom slot — Budget Settings + Logout */
+            content: '';
+            position: absolute;
+            left: 8px;
+            width: 3px;
+            height: 18px;
+            background: var(--mint);
+            border-radius: 2px;
+        }
+
         .sb-bottom {
             margin-top: auto;
             padding: 6px 10px 16px;
@@ -333,7 +326,6 @@
             background: var(--bg);
         }
 
-        /* Topbar (desktop) */
         .topbar {
             display: flex;
             justify-content: flex-end;
@@ -356,7 +348,6 @@
             font-size: .87rem;
         }
 
-        /* Global cards & buttons */
         .card {
             border: none;
             border-radius: var(--radius);
@@ -428,13 +419,45 @@
         @media (max-width: 991px) {
             .sidebar      { transform: translateX(calc(-1 * var(--sb-w))); }
             .sidebar.mobile-open { transform: translateX(0); }
-            .main-content { margin-left: 0; padding-top: calc(var(--bar-h) + 20px); }
+            .main-content { margin-left: 0; padding: calc(var(--bar-h) + 20px) 16px 28px; }
             .mobile-topbar { display: flex; }
         }
 
         @media (max-width: 575px) {
-            .main-content { padding: calc(var(--bar-h) + 14px) 14px 28px; }
+            .main-content { padding: calc(var(--bar-h) + 14px) 12px 28px; }
             .auth-card    { padding: 28px 20px; }
+        }
+
+        /* =====================================================
+           GLOBAL RESPONSIVE HELPERS
+        ===================================================== */
+
+        /* Page header — stack on mobile */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .page-header h3 {
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: #1e2d3d;
+            margin: 0;
+        }
+
+        /* Tables scroll on mobile */
+        .table-responsive {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Prevent text overflow on small screens */
+        @media (max-width: 575px) {
+            .page-header h3 { font-size: 1.2rem; }
+            h4 { font-size: 1.1rem !important; }
+            h3 { font-size: 1.2rem !important; }
         }
     </style>
 </head>
@@ -499,7 +522,6 @@
         <!-- SIDEBAR -->
         <aside class="sidebar p-0" id="appSidebar">
 
-            <!-- Brand — زي الصورة: icon box + Masroofy + BUDGET TRACKER -->
             <a href="/record/" class="sb-brand">
                 <div class="sb-brand-icon">
                     <i class="bi bi-wallet2" style="color:#7ecde4;"></i>
@@ -510,7 +532,6 @@
                 </div>
             </a>
 
-            <!-- MAIN section -->
             <div class="sb-section">Main</div>
 
             <a href="/record/"
@@ -531,7 +552,6 @@
                 <span>History</span>
             </a>
 
-            <!-- INSIGHTS section -->
             <div class="sb-section">Insights</div>
 
             <a href="/stats/"
@@ -545,9 +565,8 @@
                 <i class="bi bi-bell"></i>
                 <span>Notifications</span>
             </a>
-            <!-- Bottom: Settings + Logout -->
+
             <div class="sb-bottom">
-               
                 <a href="{% url 'logout' %}">
                     <i class="bi bi-box-arrow-right"></i>
                     <span>Logout</span>
@@ -558,13 +577,11 @@
         {% endif %}
 
         <!-- MAIN CONTENT -->
-<div class="{% if user.is_authenticated %}col main-content{% else %}col-12{% endif %}">
-            <!-- Topbar (desktop only) -->
+        <div class="{% if user.is_authenticated %}col main-content{% else %}col-12{% endif %}">
             {% if user.is_authenticated %}
             <div class="topbar d-none d-lg-flex">
                 <div class="user-box">
                     <span>👋 {{ user.username }}</span>
-                    
                 </div>
             </div>
             {% endif %}

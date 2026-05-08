@@ -4,7 +4,12 @@
 {% block extra_css %}
 <style>
     .hero {
-        padding: 80px 0;
+        padding: 60px 0 40px;
+    }
+
+    @media (max-width: 767px) {
+        .hero { padding: 30px 0 20px; text-align: center; }
+        .hero .btn-group-hero { justify-content: center; }
     }
 
     .card-soft {
@@ -13,6 +18,7 @@
         padding: 25px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.05);
         transition: 0.3s;
+        height: 100%;
     }
 
     .card-soft:hover {
@@ -22,8 +28,12 @@
     .cta-box {
         background: var(--teal);
         border-radius: 25px;
-        padding: 50px;
+        padding: 50px 30px;
         color: white;
+    }
+
+    @media (max-width: 575px) {
+        .cta-box { padding: 36px 20px; border-radius: 16px; }
     }
 
     .btn-hero {
@@ -34,6 +44,7 @@
         border: none;
         transition: 0.3s;
         text-decoration: none;
+        display: inline-block;
     }
 
     .btn-hero:hover {
@@ -42,6 +53,20 @@
         background: #ff8c00;
         color: white;
     }
+
+    .steps-row > div {
+        padding: 12px 8px;
+        font-weight: 600;
+        color: var(--teal);
+    }
+
+    @media (max-width: 767px) {
+        .steps-row > div {
+            border-bottom: 1px solid var(--border);
+            padding: 10px 0;
+        }
+        .steps-row > div:last-child { border-bottom: none; }
+    }
 </style>
 {% endblock %}
 
@@ -49,9 +74,9 @@
 
 <!-- HERO -->
 <section class="container hero">
-    <div class="row align-items-center">
+    <div class="row align-items-center g-4">
         <div class="col-md-6">
-            <h1 class="fw-bold">
+            <h1 class="fw-bold" style="font-size: clamp(1.6rem, 4vw, 2.4rem);">
                 Master Your Student Budget with
                 <span class="text-primary">Masroofy</span>
             </h1>
@@ -61,8 +86,10 @@
                 without spreadsheets.
             </p>
 
-            <a href="{% url 'signup' %}" class="btn-hero me-2 mt-3 d-inline-block">Get Started</a>
-            <a href="{% url 'login' %}" class="btn btn-outline-secondary">Login</a>
+            <div class="d-flex flex-wrap gap-2 mt-3 btn-group-hero">
+                <a href="{% url 'signup' %}" class="btn-hero">Get Started</a>
+                <a href="{% url 'login' %}" class="btn btn-outline-secondary">Login</a>
+            </div>
         </div>
     </div>
 </section>
@@ -73,39 +100,37 @@
     <p class="text-muted mb-5">Everything you need to manage your finances</p>
 
     <div class="row g-4">
-
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="card-soft text-center">
-                💰
-                <h5 class="mt-2">Expense Tracking</h5>
+                <div style="font-size:2rem;">💰</div>
+                <h5 class="mt-2" style="font-size:1rem;">Expense Tracking</h5>
                 <p class="text-muted small">Log expenses instantly</p>
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="card-soft text-center">
-                ⏱
-                <h5 class="mt-2">Daily Limit</h5>
+                <div style="font-size:2rem;">⏱</div>
+                <h5 class="mt-2" style="font-size:1rem;">Daily Limit</h5>
                 <p class="text-muted small">Smart spending control</p>
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="card-soft text-center">
-                📊
-                <h5 class="mt-2">Dashboard</h5>
+                <div style="font-size:2rem;">📊</div>
+                <h5 class="mt-2" style="font-size:1rem;">Dashboard</h5>
                 <p class="text-muted small">Visual insights</p>
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="card-soft text-center">
-                🔔
-                <h5 class="mt-2">Alerts</h5>
+                <div style="font-size:2rem;">🔔</div>
+                <h5 class="mt-2" style="font-size:1rem;">Alerts</h5>
                 <p class="text-muted small">Budget warnings</p>
             </div>
         </div>
-
     </div>
 </section>
 
@@ -113,10 +138,10 @@
 <section class="container text-center py-5">
     <h2 class="mb-4">Simple 3-Step Setup</h2>
 
-    <div class="row">
-        <div class="col-md-4">1. Connect Safely</div>
-        <div class="col-md-4">2. Set Limits</div>
-        <div class="col-md-4">3. Track Real-time</div>
+    <div class="row steps-row">
+        <div class="col-12 col-md-4">1. Connect Safely</div>
+        <div class="col-12 col-md-4">2. Set Limits</div>
+        <div class="col-12 col-md-4">3. Track Real-time</div>
     </div>
 </section>
 

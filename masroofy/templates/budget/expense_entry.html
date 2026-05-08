@@ -52,6 +52,7 @@
 
   /* ── Countdown banner ───────────────────────────── */
   .cycle-banner {
+    flex-wrap: wrap;
     background: linear-gradient(135deg, #1D5D74 0%, #164e63 100%);
     border-radius: 14px; padding: 18px 22px; color: #fff;
     display: flex; align-items: center; gap: 18px;
@@ -215,7 +216,7 @@
     </div>
   </div>
   <!-- زرين منفصلين -->
-  <div class="d-flex gap-2 flex-shrink-0">
+  <div class="d-flex gap-2 flex-shrink-0 flex-wrap">
     <button class="cb-edit" onclick="toggleEdit()" title="Edit budget — transactions stay">
       <i class="bi bi-pencil me-1"></i>Edit
     </button>

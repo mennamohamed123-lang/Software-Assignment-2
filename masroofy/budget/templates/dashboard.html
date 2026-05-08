@@ -48,6 +48,7 @@
     color: #6b7a8d;
     border-bottom: 1.5px solid #e4eaee;
     padding-bottom: 10px;
+    white-space: nowrap;
 }
 .activity-table td {
     padding: 11px 0;
@@ -63,18 +64,15 @@
     border-radius: 20px;
     font-size: .78rem;
     font-weight: 600;
+    white-space: nowrap;
 }
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 22px;
-}
-.page-header h3 {
-    font-weight: 800;
-    font-size: 1.4rem;
-    color: #1e2d3d;
-    margin: 0;
+
+/* KPI value shrinks gracefully */
+@media (max-width: 575px) {
+    .kpi-card .kpi-value { font-size: 1.25rem; }
+    .kpi-card { padding: 16px 16px; }
+    /* Stack KPI cards 2 per row on mobile */
+    .kpi-grid .col-md-3 { width: 50%; }
 }
 </style>
 {% endblock %}
@@ -105,29 +103,29 @@
 {% else %}
 
 <!-- KPI Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
+<div class="row g-3 mb-4 kpi-grid">
+    <div class="col-6 col-md-3">
         <div class="kpi-card" style="background:linear-gradient(135deg,#1D5D74,#164e63);color:#fff;">
             <div class="kpi-label">Total Budget</div>
             <div class="kpi-value">{{ total }}</div>
             <span class="kpi-icon">💰</span>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
         <div class="kpi-card" style="background:linear-gradient(135deg,#D66D55,#c25640);color:#fff;">
             <div class="kpi-label">Spent</div>
             <div class="kpi-value">{{ spent }}</div>
             <span class="kpi-icon">📤</span>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
         <div class="kpi-card" style="background:linear-gradient(135deg,#28a745,#1e8035);color:#fff;">
             <div class="kpi-label">Remaining</div>
             <div class="kpi-value">{{ remaining }}</div>
             <span class="kpi-icon">💚</span>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
         <div class="kpi-card {% if budget_is_tight %}bg-warning{% else %}bg-white{% endif %}" style="border:1.5px solid #e4eaee;">
             <div class="kpi-label" style="color:#6b7a8d;">Daily Limit</div>
             <div class="kpi-value" style="color:#1e2d3d;">{{ daily_limit|floatformat:2 }}</div>
@@ -137,33 +135,35 @@
 </div>
 
 <!-- Latest Activity -->
-<div class="card p-4">
+<div class="card p-3 p-md-4">
     <div class="section-title"><i class="bi bi-clock-history me-1"></i> Latest Activity</div>
-    <table class="table table-borderless activity-table mb-0">
-        <thead>
-            <tr>
-                <th>Category</th>
-                <th>Amount</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for t in latest %}
-            <tr>
-                <td><span class="badge-cat">{{ t.category.name }}</span></td>
-                <td class="fw-bold text-danger">{{ t.amount }} EGP</td>
-                <td class="text-muted">{{ t.timestamp|date:"M d, Y" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="3" class="text-center text-muted py-5">
-                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                    No activity yet — start by logging an expense!
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-borderless activity-table mb-0">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in latest %}
+                <tr>
+                    <td><span class="badge-cat">{{ t.category.name }}</span></td>
+                    <td class="fw-bold text-danger">{{ t.amount }} EGP</td>
+                    <td class="text-muted">{{ t.timestamp|date:"M d, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                        No activity yet — start by logging an expense!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 {% endif %}
