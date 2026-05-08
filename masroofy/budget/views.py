@@ -693,7 +693,7 @@ def record_expense(request):
         "spent_today":          spent_today,
         "days_left":            days_left,
         "total_days":           total_days,
-        "today_transactions":   tx_dao.get_by_date(today) if cycle else [],
+        "today_transactions":   tx_dao.get_by_date(today, user=request.user) if cycle else [],
         "result_message":       None,
         "result_status":        None,
         "daily_alert":          get_daily_alert(daily_record),

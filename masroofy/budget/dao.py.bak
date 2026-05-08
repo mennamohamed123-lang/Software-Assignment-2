@@ -207,15 +207,17 @@ class TransactionDAO:
                                                .order_by("-timestamp")
         ]
 
-    def get_by_date(self, date, user=None) -> list:
+    def get_by_date(self, date) -> list:
         """
-        Returns transactions for a given date, filtered by user if provided.
-        Returns Django ORM objects so templates can access category.name and icon_emoji.
+        ✅ FIX: Returns Django ORM objects not entities so templates can access category.name and icon_emoji
+        
         """
-        qs = TransactionModel.objects.select_related("category").filter(timestamp__date=date)
-        if user is not None:
-            qs = qs.filter(user=user)
-        return list(qs.order_by("-timestamp"))
+        return list(
+            TransactionModel.objects
+            .select_related("category")
+            .filter(timestamp__date=date)
+            .order_by("-timestamp")
+        )
 
     def get_total_spent_today(self, cycle_id: int) -> float:
         """Calculates the total amount spent today for a specific cycle.

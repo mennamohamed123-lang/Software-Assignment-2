@@ -8,18 +8,6 @@ from datetime import datetime
 from typing import Optional
 
 
-CATEGORY_ICONS = {
-    "Food":          "🍔",
-    "Transport":     "🚗",
-    "Shopping":      "🛍️",
-    "Bills":         "💡",
-    "Health":        "💊",
-    "Entertainment": "🎬",
-    "Education":     "📚",
-    "Others":        "📦",
-}
-
-
 @dataclass
 class Category:
     """
@@ -32,10 +20,6 @@ class Category:
 
     def __str__(self):
         return self.name
-
-    @property
-    def icon_emoji(self):
-        return CATEGORY_ICONS.get(self.name, "📦")
 
 
 @dataclass
