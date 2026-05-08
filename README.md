@@ -126,7 +126,7 @@ python manage.py runserver
 
 - Sara Elbably
 - Mahmoud Moheb
-- Yasmeen Nasrigdien
+- Yasmeen Nasriddien
 - Mennatullah Mohamed
 
 ---
