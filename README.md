@@ -4,10 +4,15 @@ Masroofy is a smart expense and budget management web application built using Dj
 The system helps users track their expenses, manage budget cycles, and monitor daily spending efficiently.
 
 ---
-## Sample Page from MASROOFY
-![Masroofy](https://raw.githubusercontent.com/masroofy-team/Software-Assignment-2/b1c7cc23cdb7c1da324178e6f0e6a7b7bb4ecb54/Screenshots/AppPage.png)
+
+## 🌐 Live Demo
+
+Experience Masroofy directly through the deployed website:
+
+[Visit Masroofy Website](https://masroofy-web.vercel.app)
 
 ---
+
 ## 🚀 Features
 
 - User Authentication (Login & Register)
@@ -33,13 +38,15 @@ The system helps users track their expenses, manage budget cycles, and monitor d
 - Django
 - Python
 
-### Database
+### Database & Backend Services
 - SQLite
+- Supabase
 
-### Tools
+### Deployment & Tools
 - Git & GitHub
 - VS Code
 - Figma
+- Vercel
 
 ---
 
@@ -115,14 +122,6 @@ python manage.py runserver
 
 ---
 
-## 📸 Screenshots
-
-## Sample of Doc Page
-
-![Doc](https://raw.githubusercontent.com/masroofy-team/Software-Assignment-2/f7eac021e2da0ff91439eaafff8cc46d50bf487e/Screenshots/DocPage.png)
- 
----
-
 ## 👥 Team Members
 
 - Sara Elbably
@@ -135,10 +134,11 @@ python manage.py runserver
 ## 🔮 Future Improvements
 
 - AI-based expense prediction
-- Mobile application
+- Mobile application support
 - Notifications & reminders
-- Data visualization charts
+- Advanced financial analytics
 - Multi-language support
+- Export reports as PDF or Excel
 
 ---
 
