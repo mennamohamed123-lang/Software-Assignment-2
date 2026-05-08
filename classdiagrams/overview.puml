@@ -9,7 +9,7 @@ skinparam classArrowColor #D66D55
 skinparam ArrowThickness 3
 skinparam ClassFontSize 20
 skinparam classBackgroundColor #FFFFFF
- 
+
 skinparam classFontColor #1D5D74
 skinparam packageFontColor white
 skinparam ClassFontSize 13
@@ -25,8 +25,16 @@ package "Dashboard & Stats Component" #6c7e87  {
 package "Notification & History Component" #88b4c3 {
 }
 
+package "User Management Component (Diagram 4)" #b36b6b {
+}
+
 [Budget & Expense Component] ..> [Dashboard & Stats Component] : "shares BudgetCycle\nDailyRecord"
 [Budget & Expense Component] ..> [Notification & History Component] : "triggers alerts\nvia ExpenseView"
 [Dashboard & Stats Component] ..> [Notification & History Component] : "shares Transaction\nCategory"
+
+' Diagram 4 relations (User Management)
+[User Management Component (Diagram 4)] ..> [Budget & Expense Component] : "user creates cycles\nand expenses"
+[User Management Component (Diagram 4)] ..> [Dashboard & Stats Component] : "views analytics"
+[User Management Component (Diagram 4)] ..> [Notification & History Component] : "receives alerts"
 
 @enduml

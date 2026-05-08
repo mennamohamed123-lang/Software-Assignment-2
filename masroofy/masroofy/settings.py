@@ -77,7 +77,7 @@ WSGI_APPLICATION = 'masroofy.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL')
+        default='postgresql://postgres.eflydxnyrzqzhxqxeqav:Masroof_team@aws-0-eu-west-1.pooler.supabase.com:6543/postgres'
     )
 }
 
