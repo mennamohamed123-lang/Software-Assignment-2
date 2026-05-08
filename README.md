@@ -119,7 +119,7 @@ python manage.py runserver
 
 ## Sample of Doc Page
 
-![Doc](https://raw.githubusercontent.com/masroofy-team/Software-Assignment-2/b1c7cc23cdb7c1da324178e6f0e6a7b7bb4ecb54/Screenshots/DocPage.png)
+![Doc](https://raw.githubusercontent.com/masroofy-team/Software-Assignment-2/f7eac021e2da0ff91439eaafff8cc46d50bf487e/Screenshots/DocPage.png)
  
 ---
 
